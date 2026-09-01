@@ -63,7 +63,8 @@ jobs:
         run: |
           if [ -d "external/uv" ]; then
             echo "Removing external/uv to prevent installation conflict..."
-            rm -rf external/uv
+            chmod -R u+w external/uv || true
+            rm -rf external/uv || true
           fi
 
       - name: Get sources
