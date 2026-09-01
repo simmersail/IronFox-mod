@@ -23,13 +23,14 @@ on:
                                                                                                                       - name: Checkout code
                                                                                                                               uses: actions/checkout@v4
 
-                                                                                                                                    - name: Setup Swap (To prevent Out-of-Memory)
-                                                                                                                                            # Добавляем 8ГБ свопа, так как стандартных раннеров GitHub может не хватить
-                                                                                                                                                    run: |
-                                                                                                                                                              sudo fallocate -l 8G /swapfile
-                                                                                                                                                                        sudo chmod 600 /swapfile
-                                                                                                                                                                                  sudo mkswap /swapfile
-                                                                                                                                                                                            sudo swapon /swapfile
+                                                                                                                                        - name: Setup Swap (To prevent Out-of-Memory)
+        run: |
+          sudo swapoff /swapfile || true
+          sudo fallocate -l 8G /swapfile || true
+          sudo chmod 600 /swapfile || true
+          sudo mkswap /swapfile || true
+          sudo swapon /swapfile || true
+        continue-on-error: true
 
                                                                                                                                                                                                   - name: Set permissions
                                                                                                                                                                                                           run: chmod +x scripts/*.sh
