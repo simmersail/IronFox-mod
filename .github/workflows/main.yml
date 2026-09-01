@@ -16,10 +16,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Предотвращаем принудительное завершение долгого билда (6 часов)
     timeout-minutes: 360 
     container:
       image: registry.gitlab.com/ironfox-oss/ironfox:latest
+    
+    # 1. Глобальный уровень (основной)
+    env:
+      IRONFOX_CI: "1"
+      MOZ_BUILD_CONCURRENCY: 2
 
     steps:
       - name: Checkout code
@@ -35,23 +39,34 @@ jobs:
         continue-on-error: true
 
       - name: Fix Git Ownership
-        # Решает ошибку "detected dubious ownership"
-        # Позволяет Git работать с папками, созданными другим пользователем
         run: git config --global --add safe.directory '*'
 
       - name: Set permissions
         run: chmod +x scripts/*.sh
 
+      - name: Cache Dependencies and Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            external/
+            build/
+            **/obj-
+          key: ${{ runner.os }}-ironfox-full-cache-${{ github.event.inputs.arch }}
+          restore-keys: |
+            ${{ runner.os }}-ironfox-full-cache-
+
       - name: Get sources
         run: ./scripts/get_sources.sh || true
 
       - name: Full CI Build (GeckoView + Fenix)
-        # CI: "true" — решает ошибку "should only be called from CI!"
-        # MOZ_BUILD_CONCURRENCY: 2 — предотвращает OOM (падение по памяти)
+        # 2. Уровень шага (дополнительная страховка)
         env:
-          CI: "true"
-          MOZ_BUILD_CONCURRENCY: 2
+          IRONFOX_CI: "1"
         run: |
+          # 3. Защитный экспорт и отладка внутри контейнера
+          echo "Verifying environment: IRONFOX_CI is '${IRONFOX_CI}'"
+          export IRONFOX_CI=1
+          
           ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
           ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
 
@@ -59,5 +74,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: IronFox-${{ github.event.inputs.arch }}
-          # Рекурсивно ищет все APK в любых папках проекта
           path: "**/*.apk"
