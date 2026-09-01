@@ -60,29 +60,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ironfox-full-cache-
 
-      - name: Get sources (with forced uv cleanup)
+      - name: Get sources (non-interactive mode)
         run: |
-          # 1. Определяем абсолютный путь к папке uv
-          UV_PATH="${{ github.workspace }}/external/uv"
+          # Удаляем папку uv если она существует
+          rm -rf "${{ github.workspace }}/external/uv" || true
           
-          echo "Checking for uv at $UV_PATH"
-          
-          # 2. Удаляем папку максимально агрессивно
-          if [ -d "$UV_PATH" ]; then
-            echo "Found existing uv installation. Force removing..."
-            rm -rf "$UV_PATH"
-          fi
-          
-          # 3. Проверяем, действительно ли она исчезла
-          if [ -d "$UV_PATH" ]; then
-            echo "ERROR: Failed to remove $UV_PATH"
-            exit 1
-          else
-            echo "uv folder successfully removed or not present."
-          fi
-
-          # 4. Запускаем получение исходников с автоматическим подтверждением
-          echo "y" | ./scripts/get_sources.sh || true
+          # Запускаем скрипт в полностью non-interactive режиме
+          # stdin перенаправлен из /dev/null чтобы избежать зависания на read -p
+          ./scripts/get_sources.sh < /dev/null || true
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
