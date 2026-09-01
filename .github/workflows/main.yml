@@ -20,16 +20,14 @@ jobs:
     container:
       image: registry.gitlab.com/ironfox-oss/ironfox:latest
     
-    # 1. Глобальный уровень (основной)
     env:
       IRONFOX_CI: "1"
       MOZ_BUILD_CONCURRENCY: 2
-      # Добавляем переменные, которые требует setup_ci()
       CI_COMMIT_REF_NAME: ${{ github.ref_name }}
-      IRONFOX_DEV_BRANCH: "dev"    # Замените на ваше имя ветки разработки, если оно другое
-      IRONFOX_PROD_BRANCH: "main"  # Замените на ваше имя основной ветки (main/master), если другое
-            # Добавляем заглушку для даты создания пайплайна
+      IRONFOX_DEV_BRANCH: "dev"
+      IRONFOX_PROD_BRANCH: "main"
       CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
+      IRONFOX_LOG_SOURCES: "1"
 
     steps:
       - name: Checkout code
@@ -61,18 +59,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ironfox-full-cache-
 
+      - name: Fix uv Cache Conflict
+        run: |
+          if [ -d "external/uv" ]; then
+            echo "Removing external/uv to prevent installation conflict..."
+            rm -rf external/uv
+          fi
+
       - name: Get sources
         run: ./scripts/get_sources.sh || true
 
       - name: Full CI Build (GeckoView + Fenix)
-        # 2. Уровень шага (дополнительная страховка)
-        env:
-          IRONFOX_CI: "1"
         run: |
-          # 3. Защитный экспорт и отладка внутри контейнера
           echo "Verifying environment: IRONFOX_CI is '${IRONFOX_CI}'"
-          export IRONFOX_CI=1
-          
           ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
           ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
 
