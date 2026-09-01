@@ -60,29 +60,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ironfox-full-cache-
 
-       - name: Get sources (with forced uv cleanup)
-  run: |
-    # 1. Определяем абсолютный путь к папке uv
-    UV_PATH="${{ github.workspace }}/external/uv"
-    
-    echo "Checking for uv at $UV_PATH"
-    
-    # 2. Удаляем папку максимально агрессивно
-    if [ -d "$UV_PATH" ]; then
-      echo "Found existing uv installation. Force removing..."
-      rm -rf "$UV_PATH"
-    fi
-    
-    # 3. Проверяем, действительно ли она исчезла
-    if [ -d "$UV_PATH" ]; then
-      echo "ERROR: Failed to remove $UV_PATH"
-      exit 1
-    else
-      echo "uv folder successfully removed or not present."
-    fi
+      - name: Get sources (with forced uv cleanup)
+        run: |
+          # 1. Определяем абсолютный путь к папке uv
+          UV_PATH="${{ github.workspace }}/external/uv"
+          
+          echo "Checking for uv at $UV_PATH"
+          
+          # 2. Удаляем папку максимально агрессивно
+          if [ -d "$UV_PATH" ]; then
+            echo "Found existing uv installation. Force removing..."
+            rm -rf "$UV_PATH"
+          fi
+          
+          # 3. Проверяем, действительно ли она исчезла
+          if [ -d "$UV_PATH" ]; then
+            echo "ERROR: Failed to remove $UV_PATH"
+            exit 1
+          else
+            echo "uv folder successfully removed or not present."
+          fi
 
-    # 4. Запускаем получение исходников с автоматическим подтверждением
-    echo "y" | ./scripts/get_sources.sh || true
+          # 4. Запускаем получение исходников с автоматическим подтверждением
+          echo "y" | ./scripts/get_sources.sh || true
+
       - name: Full CI Build (GeckoView + Fenix)
         run: |
           echo "Verifying environment: IRONFOX_CI is '${IRONFOX_CI}'"
