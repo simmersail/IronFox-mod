@@ -1,1 +1,54 @@
-qwe
+name: IronFox Professional Build
+on:
+  workflow_dispatch:
+      inputs:
+            arch:
+                    description: 'Архитектура (arm64 = v8a)'
+                            required: true
+                                    default: 'arm64'
+                                            type: choice
+                                                    options:
+                                                              - arm
+                                                                        - arm64
+                                                                                  - x86_64
+                                                                                            - bundle
+
+                                                                                            jobs:
+                                                                                              build:
+                                                                                                  runs-on: ubuntu-latest
+                                                                                                      container:
+                                                                                                            image: registry.gitlab.com/ironfox-oss/ironfox:latest
+
+                                                                                                                steps:
+                                                                                                                      - name: Checkout code
+                                                                                                                              uses: actions/checkout@v4
+
+                                                                                                                                    - name: Setup Swap (To prevent Out-of-Memory)
+                                                                                                                                            # Добавляем 8ГБ свопа, так как стандартных раннеров GitHub может не хватить
+                                                                                                                                                    run: |
+                                                                                                                                                              sudo fallocate -l 8G /swapfile
+                                                                                                                                                                        sudo chmod 600 /swapfile
+                                                                                                                                                                                  sudo mkswap /swapfile
+                                                                                                                                                                                            sudo swapon /swapfile
+
+                                                                                                                                                                                                  - name: Set permissions
+                                                                                                                                                                                                          run: chmod +x scripts/*.sh
+
+                                                                                                                                                                                                                - name: Get sources
+                                                                                                                                                                                                                        run: ./scripts/get_sources.sh
+
+                                                                                                                                                                                                                              - name: Full CI Build (GeckoView + Fenix)
+                                                                                                                                                                                                                                      # Используем официальный CI-скрипт из GitLab
+                                                                                                                                                                                                                                              # Сначала собираем движок, затем оболочку
+                                                                                                                                                                                                                                                      run: |
+                                                                                                                                                                                                                                                                ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
+                                                                                                                                                                                                                                                                          ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
+
+                                                                                                                                                                                                                                                                                - name: Upload APK
+                                                                                                                                                                                                                                                                                        uses: actions/upload-artifact@v4
+                                                                                                                                                                                                                                                                                                with:
+                                                                                                                                                                                                                                                                                                          name: IronFox-${{ github.event.inputs.arch }}
+                                                                                                                                                                                                                                                                                                                    path: |
+                                                                                                                                                                                                                                                                                                                                *.apk
+                                                                                                                                                                                                                                                                                                                                            artifacts/**/*.apk
+                                                                                                                                                                                                                                                                                                                                                        output/**/*.apk
