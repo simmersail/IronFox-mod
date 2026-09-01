@@ -24,6 +24,10 @@ jobs:
     env:
       IRONFOX_CI: "1"
       MOZ_BUILD_CONCURRENCY: 2
+      # Добавляем переменные, которые требует setup_ci()
+      CI_COMMIT_REF_NAME: ${{ github.ref_name }}
+      IRONFOX_DEV_BRANCH: "dev"    # Замените на ваше имя ветки разработки, если оно другое
+      IRONFOX_PROD_BRANCH: "main"  # Замените на ваше имя основной ветки (main/master), если другое
 
     steps:
       - name: Checkout code
