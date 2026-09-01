@@ -65,9 +65,8 @@ jobs:
           # Удаляем папку uv если она существует
           rm -rf "${{ github.workspace }}/external/uv" || true
           
-          # Запускаем скрипт в полностью non-interactive режиме
-          # stdin перенаправлен из /dev/null чтобы избежать зависания на read -p
-          ./scripts/get_sources.sh < /dev/null || true
+          # Запускаем bash в non-interactive режиме, который игнорирует read -p
+          bash -c 'set +m; exec </dev/null; ./scripts/get_sources.sh' || true
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
