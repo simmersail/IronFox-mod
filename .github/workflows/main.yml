@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 360 
     container:
       image: registry.gitlab.com/ironfox-oss/ironfox:latest
+      options: --user root
     
     env:
       IRONFOX_CI: "1"
@@ -62,8 +63,7 @@ jobs:
       - name: Fix uv Cache Conflict
         run: |
           if [ -d "external/uv" ]; then
-            echo "Removing external/uv to prevent installation conflict..."
-            chmod -R u+w external/uv || true
+            echo "Force removing external/uv as root..."
             rm -rf external/uv || true
           fi
 
