@@ -30,8 +30,7 @@ jobs:
       CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
       IRONFOX_LOG_SOURCES: "1"
       
-      # Флаги управления (важно для логики if/elif в ci-build.sh)
-      # Устанавливаем 1 для S3 Artifacts, чтобы скрипт зашел в prep_s3_artifacts
+      # Флаги управления
       IRONFOX_CI_PREP_S3_ARTIFACTS: "1"
       IRONFOX_CI_PREP_S3_RELEASES: "1"
       IRONFOX_CI_PREP_SB_GAPI_KEY: "1"
@@ -98,15 +97,26 @@ jobs:
           echo "Running get_sources.sh with auto-confirmation..."
           yes | ./scripts/get_sources.sh || true
 
+      - name: Setup Rust and Install cbindgen
+        run: |
+          # Устанавливаем системный Rust, чтобы у нас был cargo
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          # Обновляем PATH для текущего шага
+          export PATH="$HOME/.cargo/bin:$PATH"
+          # Устанавливаем cbindgen
+          cargo install cbindgen
+          # Добавляем в глобальный PATH GitHub Actions для следующих шагов
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Full CI Build (GeckoView + Fenix)
         run: |
-          export CARGO_BIN="${{ github.workspace }}/build/.cargo/bin"
-          export PATH="$CARGO_BIN:$PATH"
+          # Добавляем оба возможных пути к cargo (системный и локальный)
+          export PATH="$HOME/.cargo/bin:${{ github.workspace }}/build/.cargo/bin:$PATH"
           
-          cargo --version
-          
+          # Проверка наличия cbindgen перед стартом
           if ! command -v cbindgen &> /dev/null; then
-            cargo install cbindgen
+             echo "Error: cbindgen still not found in PATH"
+             exit 1
           fi
 
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
