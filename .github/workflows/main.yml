@@ -29,10 +29,37 @@ jobs:
       IRONFOX_PROD_BRANCH: "main"
       CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
       IRONFOX_LOG_SOURCES: "1"
-            # Заглушки для S3, чтобы скрипт не падал на проверке секретов
+      
+      # Флаги управления (важно для логики if/elif в ci-build.sh)
+      # Устанавливаем 1 для S3 Artifacts, чтобы скрипт зашел в prep_s3_artifacts
+      IRONFOX_CI_PREP_S3_ARTIFACTS: "1"
+      IRONFOX_CI_PREP_S3_RELEASES: "1"
+      IRONFOX_CI_PREP_SB_GAPI_KEY: "1"
+      IRONFOX_CI_PREP_ANDROID_KEYSTORE: "0"
+
+      # Заглушки для S3 Artifacts
       IRONFOX_ARTIFACTS_S3_ACCESS_KEY: "dummy_key"
       IRONFOX_ARTIFACTS_S3_SECRET_KEY: "dummy_secret"
-      IRONFOX_ARTIFACTS_S3_BUCKET: "dummy_bucket"
+      IRONFOX_ARTIFACTS_S3_BUCKET_NAME: "dummy_bucket"
+      IRONFOX_ARTIFACTS_S3_ENDPOINT: "dummy_endpoint"
+      IRONFOX_ARTIFACTS_S3_ACCESS_KEY_FILE: "/tmp/artifacts_access_key"
+      IRONFOX_ARTIFACTS_S3_BUCKET_NAME_FILE: "/tmp/artifacts_bucket_name"
+      IRONFOX_ARTIFACTS_S3_ENDPOINT_FILE: "/tmp/artifacts_endpoint"
+      IRONFOX_ARTIFACTS_S3_SECRET_KEY_FILE: "/tmp/artifacts_secret_key"
+
+      # Заглушки для S3 Releases
+      IRONFOX_RELEASES_S3_ACCESS_KEY: "dummy_key"
+      IRONFOX_RELEASES_S3_SECRET_KEY: "dummy_secret"
+      IRONFOX_RELEASES_S3_BUCKET_NAME: "dummy_bucket"
+      IRONFOX_RELEASES_S3_ENDPOINT: "dummy_endpoint"
+      IRONFOX_RELEASES_S3_ACCESS_KEY_FILE: "/tmp/releases_access_key"
+      IRONFOX_RELEASES_S3_BUCKET_NAME_FILE: "/tmp/releases_bucket_name"
+      IRONFOX_RELEASES_S3_ENDPOINT_FILE: "/tmp/releases_endpoint"
+      IRONFOX_RELEASES_S3_SECRET_KEY_FILE: "/tmp/releases_secret_key"
+
+      # Заглушка для Google Safe Browsing
+      IRONFOX_SB_GAPI_KEY: "dummy_api_key"
+      IRONFOX_SB_GAPI_KEY_FILE: "/tmp/sb_gapi_key"
 
     steps:
       - name: Checkout code
@@ -63,20 +90,18 @@ jobs:
           key: ${{ runner.os }}-ironfox-full-cache-${{ github.event.inputs.arch }}
           restore-keys: |
             ${{ runner.os }}-ironfox-full-cache-
+
       - name: Get sources (force auto-confirm)
         run: |
-          # 1. Принудительно удаляем uv, используя абсолютный путь
           echo "Cleaning up uv directory..."
           rm -rf "${{ github.workspace }}/external/uv"
-          
-          # 2. Используем команду 'yes', которая будет отвечать 'y' на любой запрос скрипта
           echo "Running get_sources.sh with auto-confirmation..."
           yes | ./scripts/get_sources.sh || true
+
       - name: Full CI Build (GeckoView + Fenix)
         run: |
           echo "Verifying environment: IRONFOX_CI is '${IRONFOX_CI}'"
-          
-          # Используем 'yes', чтобы автоматически отвечать 'y' на все вопросы внутри скриптов билда
+          # Сначала GeckoView, затем Fenix
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
 
