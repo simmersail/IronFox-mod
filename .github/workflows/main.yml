@@ -30,13 +30,13 @@ jobs:
       CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
       IRONFOX_LOG_SOURCES: "1"
       
-      # Флаги управления
+      # Флаги управления (для логики ci-build.sh)
       IRONFOX_CI_PREP_S3_ARTIFACTS: "1"
       IRONFOX_CI_PREP_S3_RELEASES: "1"
       IRONFOX_CI_PREP_SB_GAPI_KEY: "1"
       IRONFOX_CI_PREP_ANDROID_KEYSTORE: "0"
 
-      # Заглушки для S3 Artifacts
+      # Заглушки для S3 Artifacts (обход валидации)
       IRONFOX_ARTIFACTS_S3_ACCESS_KEY: "dummy_key"
       IRONFOX_ARTIFACTS_S3_SECRET_KEY: "dummy_secret"
       IRONFOX_ARTIFACTS_S3_BUCKET_NAME: "dummy_bucket"
@@ -46,7 +46,7 @@ jobs:
       IRONFOX_ARTIFACTS_S3_ENDPOINT_FILE: "/tmp/artifacts_endpoint"
       IRONFOX_ARTIFACTS_S3_SECRET_KEY_FILE: "/tmp/artifacts_secret_key"
 
-      # Заглушки для S3 Releases
+      # Заглушки для S3 Releases (обход валидации)
       IRONFOX_RELEASES_S3_ACCESS_KEY: "dummy_key"
       IRONFOX_RELEASES_S3_SECRET_KEY: "dummy_secret"
       IRONFOX_RELEASES_S3_BUCKET_NAME: "dummy_bucket"
@@ -86,6 +86,7 @@ jobs:
             external/
             build/
             **/obj-
+            /root/.cargo/bin
           key: ${{ runner.os }}-ironfox-full-cache-${{ github.event.inputs.arch }}
           restore-keys: |
             ${{ runner.os }}-ironfox-full-cache-
@@ -97,29 +98,37 @@ jobs:
           echo "Running get_sources.sh with auto-confirmation..."
           yes | ./scripts/get_sources.sh || true
 
-      - name: Setup Rust and Install cbindgen
-        run: |
-          # Устанавливаем системный Rust, чтобы у нас был cargo
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          # Обновляем PATH для текущего шага
-          export PATH="$HOME/.cargo/bin:$PATH"
-          # Устанавливаем cbindgen
-          cargo install cbindgen
-          # Добавляем в глобальный PATH GitHub Actions для следующих шагов
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
       - name: Full CI Build (GeckoView + Fenix)
         run: |
-          # Добавляем оба возможных пути к cargo (системный и локальный)
-          export PATH="$HOME/.cargo/bin:${{ github.workspace }}/build/.cargo/bin:$PATH"
+          # 1. Поиск Cargo: сначала проверяем локальную папку build, затем домашнюю
+          LOCAL_CARGO_BIN="${{ github.workspace }}/build/.cargo/bin"
           
-          # Проверка наличия cbindgen перед стартом
+          if [ -f "$LOCAL_CARGO_BIN/cargo" ]; then
+            echo "Found local toolchain at $LOCAL_CARGO_BIN"
+            export PATH="$LOCAL_CARGO_BIN:$PATH"
+          elif [ -f "$HOME/.cargo/bin/cargo" ]; then
+            echo "Found global toolchain at $HOME/.cargo/bin"
+            export PATH="$HOME/.cargo/bin:$PATH"
+          else
+            echo "Cargo not found. Installing rustup..."
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            export PATH="$HOME/.cargo/bin:$PATH"
+          fi
+          
+          # Проверка работоспособности
+          cargo --version
+          
+          # 2. Установка cbindgen (если отсутствует)
           if ! command -v cbindgen &> /dev/null; then
-             echo "Error: cbindgen still not found in PATH"
-             exit 1
+            echo "Installing cbindgen..."
+            cargo install cbindgen
           fi
 
+          # 3. Сборка GeckoView и Fenix
+          echo "Starting GeckoView build..."
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
+          
+          echo "Starting Fenix build..."
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
 
       - name: Upload APK
