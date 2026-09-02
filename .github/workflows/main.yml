@@ -100,24 +100,15 @@ jobs:
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
-          # Определяем путь к локальному cargo из вашего лога
           export CARGO_BIN="${{ github.workspace }}/build/.cargo/bin"
           export PATH="$CARGO_BIN:$PATH"
           
-          echo "Using cargo from $CARGO_BIN"
-          
-          # Проверяем, работает ли cargo теперь
           cargo --version
           
-          # Устанавливаем cbindgen
           if ! command -v cbindgen &> /dev/null; then
-            echo "cbindgen not found, installing..."
             cargo install cbindgen
-          else
-            echo "cbindgen already installed"
           fi
 
-          # Запускаем билд
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
           yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
 
