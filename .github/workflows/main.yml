@@ -14,7 +14,31 @@ on:
           - bundle
 
 jobs:
+  # JOB 1: Подготовка физического раннера (Host)
+  # Это решает проблему "iostream error" и OOM при линковке libxul.so
+  prepare-runner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android-sdk
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$RUNNER_TOOL_CACHE"
+          df -h
+
+      - name: Setup Swap
+        run: |
+          sudo swapoff /swapfile || true
+          sudo fallocate -l 8G /swapfile || true
+          sudo chmod 600 /swapfile || true
+          sudo mkswap /swapfile || true
+          sudo swapon /swapfile || true
+
+  # JOB 2: Сборка в контейнере
   build:
+    needs: prepare-runner
     runs-on: ubuntu-latest
     timeout-minutes: 360 
     container:
@@ -29,14 +53,10 @@ jobs:
       IRONFOX_PROD_BRANCH: "main"
       CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
       IRONFOX_LOG_SOURCES: "1"
-      
-      # Флаги управления (для логики ci-build.sh)
       IRONFOX_CI_PREP_S3_ARTIFACTS: "1"
       IRONFOX_CI_PREP_S3_RELEASES: "1"
       IRONFOX_CI_PREP_SB_GAPI_KEY: "1"
       IRONFOX_CI_PREP_ANDROID_KEYSTORE: "0"
-
-      # Заглушки для S3 Artifacts (обход валидации)
       IRONFOX_ARTIFACTS_S3_ACCESS_KEY: "dummy_key"
       IRONFOX_ARTIFACTS_S3_SECRET_KEY: "dummy_secret"
       IRONFOX_ARTIFACTS_S3_BUCKET_NAME: "dummy_bucket"
@@ -45,8 +65,6 @@ jobs:
       IRONFOX_ARTIFACTS_S3_BUCKET_NAME_FILE: "/tmp/artifacts_bucket_name"
       IRONFOX_ARTIFACTS_S3_ENDPOINT_FILE: "/tmp/artifacts_endpoint"
       IRONFOX_ARTIFACTS_S3_SECRET_KEY_FILE: "/tmp/artifacts_secret_key"
-
-      # Заглушки для S3 Releases (обход валидации)
       IRONFOX_RELEASES_S3_ACCESS_KEY: "dummy_key"
       IRONFOX_RELEASES_S3_SECRET_KEY: "dummy_secret"
       IRONFOX_RELEASES_S3_BUCKET_NAME: "dummy_bucket"
@@ -55,23 +73,12 @@ jobs:
       IRONFOX_RELEASES_S3_BUCKET_NAME_FILE: "/tmp/releases_bucket_name"
       IRONFOX_RELEASES_S3_ENDPOINT_FILE: "/tmp/releases_endpoint"
       IRONFOX_RELEASES_S3_SECRET_KEY_FILE: "/tmp/releases_secret_key"
-
-      # Заглушка для Google Safe Browsing
       IRONFOX_SB_GAPI_KEY: "dummy_api_key"
       IRONFOX_SB_GAPI_KEY_FILE: "/tmp/sb_gapi_key"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Swap (To prevent Out-of-Memory)
-        run: |
-          sudo swapoff /swapfile || true
-          sudo fallocate -l 8G /swapfile || true
-          sudo chmod 600 /swapfile || true
-          sudo mkswap /swapfile || true
-          sudo swapon /swapfile || true
-        continue-on-error: true
 
       - name: Fix Git Ownership
         run: git config --global --add safe.directory '*'
@@ -93,48 +100,42 @@ jobs:
 
       - name: Get sources (force auto-confirm)
         run: |
-          echo "Cleaning up uv directory..."
           rm -rf "${{ github.workspace }}/external/uv"
-          echo "Running get_sources.sh with auto-confirmation..."
           yes | ./scripts/get_sources.sh || true
+
+      - name: Install Rust and cbindgen
+        run: |
+          # Установка Rust
+          if [ ! -f "$HOME/.cargo/bin/cargo" ]; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          fi
+          export PATH="$HOME/.cargo/bin:$PATH"
+          
+          # Установка cbindgen
+          if ! command -v cbindgen &> /dev/null; then
+            cargo install cbindgen
+          fi
+          
+          # Создаем папку бинарников внутри проекта для "параноидального" Firefox
+          mkdir -p ${{ github.workspace }}/build/bin
+          ln -sf $(which cbindgen) ${{ github.workspace }}/build/bin/cbindgen
+          
+          # Пробрасываем пути во все следующие шаги
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
+          echo "CBINDGEN=${{ github.workspace }}/build/bin/cbindgen" >> $GITHUB_ENV
+          
+          echo "cbindgen ready at: ${{ github.workspace }}/build/bin/cbindgen"
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
-          # 1. Настройка путей Rust
-          LOCAL_CARGO_BIN="${{ github.workspace }}/build/.cargo/bin"
-          if [ -f "$LOCAL_CARGO_BIN/cargo" ]; then
-            export PATH="$LOCAL_CARGO_BIN:$PATH"
-          elif [ -f "$HOME/.cargo/bin/cargo" ]; then
-            export PATH="$HOME/.cargo/bin:$PATH"
-          else
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            export PATH="$HOME/.cargo/bin:$PATH"
-          fi
-          
-          # 2. Установка cbindgen
-          if ! command -v cbindgen &> /dev/null; then
-            echo "Installing cbindgen..."
-            cargo install cbindgen
-          fi
-
-          # 3. Явное определение пути к cbindgen для передачи в mach/ci-build
-          # Ищем, где он в итоге оказался (в локальном build или в HOME)
-          if [ -f "$LOCAL_CARGO_BIN/cbindgen" ]; then
-            export CBINDGEN="$LOCAL_CARGO_BIN/cbindgen"
-          elif [ -f "$HOME/.cargo/bin/cbindgen" ]; then
-            export CBINDGEN="$HOME/.cargo/bin/cbindgen"
-          fi
-          
-          echo "Using CBINDGEN at: $CBINDGEN"
-
-          # 4. Запуск сборки с передачей переменной CBINDGEN
-          # Мы передаем ее прямо в команду, чтобы она точно попала внутрь скрипта
+          # Обращаемся к переменной через стандартный синтаксис Bash $CBINDGEN
           echo "Starting GeckoView build..."
           CBINDGEN=$CBINDGEN yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
           
           echo "Starting Fenix build..."
           CBINDGEN=$CBINDGEN yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
-          
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
