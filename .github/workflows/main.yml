@@ -105,27 +105,33 @@ jobs:
 
       - name: Install Rust and cbindgen
         run: |
+          # Принудительно устанавливаем HOME в /root, чтобы избежать конфликтов с /github/home
+          export HOME=/root
+          
           # Установка Rust
-          if [ ! -f "$HOME/.cargo/bin/cargo" ]; then
+          if [ ! -f "/root/.cargo/bin/cargo" ]; then
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           fi
-          export PATH="$HOME/.cargo/bin:$PATH"
+          
+          # Обновляем PATH для текущего шага
+          export PATH="/root/.cargo/bin:$PATH"
           
           # Установка cbindgen
           if ! command -v cbindgen &> /dev/null; then
             cargo install cbindgen
           fi
           
-          # Создаем папку бинарников внутри проекта для "параноидального" Firefox
+          # Создаем папку бинарников внутри проекта
           mkdir -p ${{ github.workspace }}/build/bin
           ln -sf $(which cbindgen) ${{ github.workspace }}/build/bin/cbindgen
           
-          # Пробрасываем пути во все следующие шаги
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          # Пробрасываем пути во все последующие шаги
+          echo "/root/.cargo/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
           echo "CBINDGEN=${{ github.workspace }}/build/bin/cbindgen" >> $GITHUB_ENV
           
           echo "cbindgen ready at: ${{ github.workspace }}/build/bin/cbindgen"
+
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
