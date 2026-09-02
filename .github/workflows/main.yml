@@ -71,8 +71,10 @@ jobs:
       - name: Full CI Build (GeckoView + Fenix)
         run: |
           echo "Verifying environment: IRONFOX_CI is '${IRONFOX_CI}'"
-          ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
-          ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
+          
+          # Используем 'yes', чтобы автоматически отвечать 'y' на все вопросы внутри скриптов билда
+          yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
+          yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
