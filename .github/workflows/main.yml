@@ -29,6 +29,10 @@ jobs:
       IRONFOX_PROD_BRANCH: "main"
       CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
       IRONFOX_LOG_SOURCES: "1"
+            # Заглушки для S3, чтобы скрипт не падал на проверке секретов
+      IRONFOX_ARTIFACTS_S3_ACCESS_KEY: "dummy_key"
+      IRONFOX_ARTIFACTS_S3_SECRET_KEY: "dummy_secret"
+      IRONFOX_ARTIFACTS_S3_BUCKET: "dummy_bucket"
 
     steps:
       - name: Checkout code
