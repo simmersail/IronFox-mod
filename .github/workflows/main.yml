@@ -59,15 +59,15 @@ jobs:
           key: ${{ runner.os }}-ironfox-full-cache-${{ github.event.inputs.arch }}
           restore-keys: |
             ${{ runner.os }}-ironfox-full-cache-
-
-      - name: Get sources (non-interactive mode)
+      - name: Get sources (force auto-confirm)
         run: |
-          # Удаляем папку uv если она существует
-          rm -rf "${{ github.workspace }}/external/uv" || true
+          # 1. Принудительно удаляем uv, используя абсолютный путь
+          echo "Cleaning up uv directory..."
+          rm -rf "${{ github.workspace }}/external/uv"
           
-          # Запускаем bash в non-interactive режиме, который игнорирует read -p
-          bash -c 'set +m; exec </dev/null; ./scripts/get_sources.sh' || true
-
+          # 2. Используем команду 'yes', которая будет отвечать 'y' на любой запрос скрипта
+          echo "Running get_sources.sh with auto-confirmation..."
+          yes | ./scripts/get_sources.sh || true
       - name: Full CI Build (GeckoView + Fenix)
         run: |
           echo "Verifying environment: IRONFOX_CI is '${IRONFOX_CI}'"
