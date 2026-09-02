@@ -15,7 +15,6 @@ on:
 
 jobs:
   # JOB 1: Подготовка физического раннера (Host)
-  # Это решает проблему "iostream error" и OOM при линковке libxul.so
   prepare-runner:
     runs-on: ubuntu-latest
     steps:
@@ -48,6 +47,7 @@ jobs:
     env:
       IRONFOX_CI: "1"
       MOZ_BUILD_CONCURRENCY: 2
+      UV_LINK_MODE: "copy" # Убирает предупреждения о hardlinks в Python/uv
       CI_COMMIT_REF_NAME: ${{ github.ref_name }}
       IRONFOX_DEV_BRANCH: "dev"
       IRONFOX_PROD_BRANCH: "main"
@@ -105,15 +105,13 @@ jobs:
 
       - name: Install Rust and cbindgen
         run: |
-          # Принудительно устанавливаем HOME в /root, чтобы избежать конфликтов с /github/home
+          # Устанавливаем HOME в /root, чтобы избежать ошибки "euid-obtained home directory"
           export HOME=/root
           
           # Установка Rust
           if [ ! -f "/root/.cargo/bin/cargo" ]; then
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           fi
-          
-          # Обновляем PATH для текущего шага
           export PATH="/root/.cargo/bin:$PATH"
           
           # Установка cbindgen
@@ -121,27 +119,26 @@ jobs:
             cargo install cbindgen
           fi
           
-          # Создаем папку бинарников внутри проекта
-          mkdir -p ${{ github.workspace }}/build/bin
-          ln -sf $(which cbindgen) ${{ github.workspace }}/build/bin/cbindgen
+          # Создаем папку ВНЕ директории build, чтобы mach build её не удалил при очистке
+          mkdir -p ${{ github.workspace }}/ironfox-tools/bin
+          ln -sf $(which cbindgen) ${{ github.workspace }}/ironfox-tools/bin/cbindgen
           
-          # Пробрасываем пути во все последующие шаги
+          # Пробрасываем пути во все следующие шаги
           echo "/root/.cargo/bin" >> $GITHUB_PATH
-          echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
-          echo "CBINDGEN=${{ github.workspace }}/build/bin/cbindgen" >> $GITHUB_ENV
+          echo "${{ github.workspace }}/ironfox-tools/bin" >> $GITHUB_PATH
+          echo "CBINDGEN=${{ github.workspace }}/ironfox-tools/bin/cbindgen" >> $GITHUB_ENV
           
-          echo "cbindgen ready at: ${{ github.workspace }}/build/bin/cbindgen"
-
+          echo "cbindgen ready at: ${{ github.workspace }}/ironfox-tools/bin/cbindgen"
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
-          # Обращаемся к переменной через стандартный синтаксис Bash $CBINDGEN
+          # Используем $CBINDGEN (переменная из GITHUB_ENV пробрасывается в окружение шага)
           echo "Starting GeckoView build..."
           CBINDGEN=$CBINDGEN yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
           
           echo "Starting Fenix build..."
           CBINDGEN=$CBINDGEN yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
-
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
