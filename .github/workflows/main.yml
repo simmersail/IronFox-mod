@@ -105,30 +105,38 @@ jobs:
 
       - name: Install Rust and cbindgen
         run: |
-          # Устанавливаем HOME в /root, чтобы избежать ошибки "euid-obtained home directory"
           export HOME=/root
           
-          # Установка Rust
           if [ ! -f "/root/.cargo/bin/cargo" ]; then
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           fi
           export PATH="/root/.cargo/bin:$PATH"
           
-          # Установка cbindgen
           if ! command -v cbindgen &> /dev/null; then
             cargo install cbindgen
           fi
           
-          # Создаем папку ВНЕ директории build, чтобы mach build её не удалил при очистке
+          # Создаем папку инструментов
           mkdir -p ${{ github.workspace }}/ironfox-tools/bin
-          ln -sf $(which cbindgen) ${{ github.workspace }}/ironfox-tools/bin/cbindgen
           
-          # Пробрасываем пути во все следующие шаги
+          # ВАЖНО: Вместо симлинка (ln -s) используем копирование (cp)
+          # Это гарантирует, что файл физически существует по этому пути
+          cp $(which cbindgen) ${{ github.workspace }}/ironfox-tools/bin/cbindgen
+          chmod +x ${{ github.workspace }}/ironfox-tools/bin/cbindgen
+          
+          # Проверяем наличие файла прямо сейчас, чтобы упасть здесь, а не в билде
+          if [ ! -f ${{ github.workspace }}/ironfox-tools/bin/cbindgen ]; then
+            echo "CRITICAL ERROR: cbindgen was not copied!"
+            exit 1
+          fi
+          
+          # Пробрасываем пути
           echo "/root/.cargo/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/ironfox-tools/bin" >> $GITHUB_PATH
           echo "CBINDGEN=${{ github.workspace }}/ironfox-tools/bin/cbindgen" >> $GITHUB_ENV
           
-          echo "cbindgen ready at: ${{ github.workspace }}/ironfox-tools/bin/cbindgen"
+          echo "cbindgen physically copied to: ${{ github.workspace }}/ironfox-tools/bin/cbindgen"
+
 
       - name: Full CI Build (GeckoView + Fenix)
         run: |
