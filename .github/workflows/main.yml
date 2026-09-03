@@ -77,7 +77,7 @@ jobs:
               git config --global --add safe.directory '*'
               chmod +x scripts/*.sh
               
-              # --- Setup Rust/cbindgen (Ensuring visibility for sub-shells) ---
+              # --- Setup Rust/cbindgen (Bulletproof Method) ---
               export HOME=/root
               if [ ! -f /root/.cargo/bin/cargo ]; then
                 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -97,9 +97,9 @@ jobs:
               export PATH=\"/opt/ironfox-tools/bin:\$PATH\"
               
               # --- Source Retrieval ---
-              # Using absolute container path to avoid GITHUB_WORKSPACE resolution issues
+              # Removed '|| true' to fail fast if sources are missing
               rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
-              yes | ./scripts/get_sources.sh || true
+              yes | ./scripts/get_sources.sh
               
               # --- Heavy Compilation ---
               echo 'Starting GeckoView build...'
@@ -108,10 +108,12 @@ jobs:
               echo 'Starting Fenix build...'
               yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
               
-              # --- Fix Permissions for Host Runner ---
-              # This prevents EACCES error during the upload-artifact step
+              # --- Targeted Permission Fix ---
+              # Only chown directories likely to contain the APKs to save time and avoid I/O bottlenecks
               echo 'Fixing permissions for artifact upload...'
-              chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod
+              find /__w/IronFox-mod/IronFox-mod -type d \( -name 'dist' -o -name 'build' \) -exec chown -R 1001:1001 {} + || true
+              # Fallback: if find fails, chown the root just in case
+              if [ $? -ne 0 ]; then chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod; fi
             "
 
       # STEP 3: Debugging (Runs on host)
