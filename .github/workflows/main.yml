@@ -1,0 +1,123 @@
+name: IronFox Professional Build
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Архитектура (arm64 = v8a)'
+        required: true
+        default: 'arm64'
+        type: choice
+        options:
+          - arm
+          - arm64
+          - x86_64
+          - bundle
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 
+    # We remove the top-level container: block to allow Host Prep first.
+    # We will run the build steps inside the container manually.
+    
+    env:
+      IRONFOX_CI: "1"
+      MOZ_BUILD_CONCURRENCY: 2
+      UV_LINK_MODE: "copy"
+      CI_COMMIT_REF_NAME: ${{ github.ref_name }}
+      IRONFOX_DEV_BRANCH: "dev"
+      IRONFOX_PROD_BRANCH: "main"
+      CI_PIPELINE_CREATED_AT: "2026-09-01T00:00:00Z" 
+      IRONFOX_LOG_SOURCES: "1"
+      IRONFOX_CI_PREP_S3_ARTIFACTS: "1"
+      IRONFOX_CI_PREP_S3_RELEASES: "1"
+      IRONFOX_CI_PREP_SB_GAPI_KEY: "1"
+      IRONFOX_CI_PREP_ANDROID_KEYSTORE: "0"
+      IRONFOX_ARTIFACTS_S3_ACCESS_KEY: "dummy_key"
+      IRONFOX_ARTIFACTS_S3_SECRET_KEY: "dummy_secret"
+      IRONFOX_ARTIFACTS_S3_BUCKET_NAME: "dummy_bucket"
+      IRONFOX_ARTIFACTS_S3_ENDPOINT: "dummy_endpoint"
+      IRONFOX_ARTIFACTS_S3_ACCESS_KEY_FILE: "/tmp/artifacts_access_key"
+      IRONFOX_ARTIFACTS_S3_BUCKET_NAME_FILE: "/tmp/artifacts_bucket_name"
+      IRONFOX_ARTIFACTS_S3_ENDPOINT_FILE: "/tmp/artifacts_endpoint"
+      IRONFOX_ARTIFACTS_S3_SECRET_KEY_FILE: "/tmp/artifacts_secret_key"
+      IRONFOX_RELEASES_S3_ACCESS_KEY: "dummy_key"
+      IRONFOX_RELEASES_S3_SECRET_KEY: "dummy_secret"
+      IRONFOX_RELEASES_S3_BUCKET_NAME: "dummy_bucket"
+      IRONFOX_RELEASES_S3_ENDPOINT: "dummy_endpoint"
+      IRONFOX_RELEASES_S3_ACCESS_KEY_FILE: "/tmp/releases_access_key"
+      IRONFOX_RELEASES_S3_BUCKET_NAME_FILE: "/tmp/releases_bucket_name"
+      IRONFOX_RELEASES_S3_ENDPOINT_FILE: "/tmp/releases_endpoint"
+      IRONFOX_RELEASES_S3_SECRET_KEY_FILE: "/tmp/releases_secret_key"
+      IRONFOX_SB_GAPI_KEY: "dummy_api_key"
+      IRONFOX_SB_GAPI_KEY_FILE: "/tmp/sb_gapi_key"
+
+    steps:
+      # STEP 1: Host Prep (Physical VM) - This gets you 97GB and real Swap
+      - name: Host Cleanup and Swap
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android-sdk /opt/ghc "/usr/local/share/boost" "$RUNNER_TOOL_CACHE"
+          sudo swapoff /swapfile || true
+          sudo fallocate -l 8G /swapfile || true
+          sudo chmod 600 /swapfile || true
+          sudo mkswap /swapfile || true
+          sudo swapon /swapfile || true
+          echo "Host Space After Cleanup:"
+          df -h
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # STEP 2: Run everything else inside the Docker container
+      # We use a single block to maintain the environment and paths
+      - name: Build Process
+        uses: docker://registry.gitlab.com/ironfox-oss/ironfox:latest
+        with:
+          args: /bin/bash -c "
+            set -e
+            git config --global --add safe.directory '*'
+            chmod +x scripts/*.sh
+            
+            # --- Setup Rust/cbindgen (Bulletproof Method) ---
+            export HOME=/root
+            if [ ! -f /root/.cargo/bin/cargo ]; then
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            fi
+            export PATH=\"/root/.cargo/bin:\$PATH\"
+            if [ ! -f /root/.cargo/bin/cbindgen ]; then
+              cargo install cbindgen
+            fi
+            mkdir -p /opt/ironfox-tools/bin
+            cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
+            chmod +x /opt/ironfox-tools/bin/cbindgen
+            
+            # --- Source Retrieval ---
+            rm -rf \"\${GITHUB_WORKSPACE}/external/uv\"
+            yes | ./scripts/get_sources.sh || true
+            
+            # --- Heavy Compilation ---
+            echo 'Starting GeckoView build...'
+            CBINDGEN=/opt/ironfox-tools/bin/cbindgen yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
+            
+            echo 'Starting Fenix build...'
+            CBINDGEN=/opt/ironfox-tools/bin/cbindgen yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
+          "
+
+      # STEP 3: Debugging (Runs on host if build fails, but can access container logs)
+      - name: Post-Failure Debugging
+        if: failure()
+        run: |
+          echo "--- Host Swap Status ---"
+          swapon --show
+          echo "--- Host Disk Analysis ---"
+          df -h
+          # Since we are now on the host, we check dmesg for the OOM Killer
+          echo "--- Host System Logs (dmesg) ---"
+          sudo dmesg | tail -n 100
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: IronFox-${{ github.event.inputs.arch }}
+          path: "**/*.apk"
