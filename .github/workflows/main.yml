@@ -135,8 +135,7 @@ jobs:
               yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
               
               echo 'Fixing permissions for artifact upload...'
-              find /__w/IronFox-mod/IronFox-mod -type d \( -name 'dist' -o -name 'build' \) -exec chown -R 1001:1001 {} + || true
-              if [ $? -ne 0 ]; then chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod; fi
+              chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod
             " | tee build_output.log
 
       # STEP 4: Debugging (Runs on host)
