@@ -17,15 +17,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 360 
-    container:
-      image: registry.gitlab.com/ironfox-oss/ironfox:latest
-      options: --user root
+    # We remove the top-level container: block to allow Host Prep first.
+    # We will run the build steps inside the container manually.
     
     env:
       IRONFOX_CI: "1"
       MOZ_BUILD_CONCURRENCY: 2
       UV_LINK_MODE: "copy"
-      MOZ_LINKER: "lld" 
       CI_COMMIT_REF_NAME: ${{ github.ref_name }}
       IRONFOX_DEV_BRANCH: "dev"
       IRONFOX_PROD_BRANCH: "main"
@@ -55,8 +53,8 @@ jobs:
       IRONFOX_SB_GAPI_KEY_FILE: "/tmp/sb_gapi_key"
 
     steps:
-      # Moved Host Prep into the Build Job to ensure swap is actually on THIS machine
-      - name: Free Disk Space and Setup Swap
+      # STEP 1: Host Prep (Physical VM) - This gets you 97GB and real Swap
+      - name: Host Cleanup and Swap
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android-sdk /opt/ghc "/usr/local/share/boost" "$RUNNER_TOOL_CACHE"
           sudo swapoff /swapfile || true
@@ -64,78 +62,61 @@ jobs:
           sudo chmod 600 /swapfile || true
           sudo mkswap /swapfile || true
           sudo swapon /swapfile || true
+          echo "Host Space After Cleanup:"
           df -h
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Fix Git Ownership
-        run: git config --global --add safe.directory '*'
-
-      - name: Set permissions
-        run: chmod +x scripts/*.sh
-
-      - name: Cache Dependencies and Build
-        uses: actions/cache@v4
+      # STEP 2: Run everything else inside the Docker container
+      # We use a single block to maintain the environment and paths
+      - name: Build Process
+        uses: docker://registry.gitlab.com/ironfox-oss/ironfox:latest
         with:
-          path: |
-            external/
-            build/
-            **/obj-
-            /root/.cargo/bin
-          key: ${{ runner.os }}-ironfox-full-cache-${{ github.event.inputs.arch }}
-          restore-keys: |
-            ${{ runner.os }}-ironfox-full-cache-
+          args: /bin/bash -c "
+            set -e
+            git config --global --add safe.directory '*'
+            chmod +x scripts/*.sh
+            
+            # --- Setup Rust/cbindgen (Bulletproof Method) ---
+            export HOME=/root
+            if [ ! -f /root/.cargo/bin/cargo ]; then
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            fi
+            export PATH=\"/root/.cargo/bin:\$PATH\"
+            if [ ! -f /root/.cargo/bin/cbindgen ]; then
+              cargo install cbindgen
+            fi
+            mkdir -p /opt/ironfox-tools/bin
+            cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
+            chmod +x /opt/ironfox-tools/bin/cbindgen
+            
+            # --- Source Retrieval ---
+            rm -rf \"\${GITHUB_WORKSPACE}/external/uv\"
+            yes | ./scripts/get_sources.sh || true
+            
+            # --- Heavy Compilation ---
+            echo 'Starting GeckoView build...'
+            CBINDGEN=/opt/ironfox-tools/bin/cbindgen yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
+            
+            echo 'Starting Fenix build...'
+            CBINDGEN=/opt/ironfox-tools/bin/cbindgen yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
+          "
 
-      - name: Get sources (force auto-confirm)
-        run: |
-          rm -rf "${{ github.workspace }}/external/uv"
-          yes | ./scripts/get_sources.sh || true
-
-      - name: Install Rust and cbindgen
-        run: |
-          export HOME=/root
-          if [ ! -f "/root/.cargo/bin/cargo" ]; then
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          fi
-          export PATH="/root/.cargo/bin:$PATH"
-          if [ ! -f "/root/.cargo/bin/cbindgen" ]; then
-            cargo install cbindgen
-          fi
-          mkdir -p /opt/ironfox-tools/bin
-          cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
-          chmod +x /opt/ironfox-tools/bin/cbindgen
-          echo "/root/.cargo/bin" >> $GITHUB_PATH
-          echo "/opt/ironfox-tools/bin" >> $GITHUB_PATH
-          echo "CBINDGEN=/opt/ironfox-tools/bin/cbindgen" >> $GITHUB_ENV
-
-      - name: Full CI Build (GeckoView + Fenix)
-        run: |
-          # Check compiler version and path
-          clang++ --version
-          which clang++
-          
-          echo "Starting GeckoView build..."
-          CBINDGEN=$CBINDGEN yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
-          echo "Starting Fenix build..."
-          CBINDGEN=$CBINDGEN yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
-
-      # NEW DEBUG STEP
+      # STEP 3: Debugging (Runs on host if build fails, but can access container logs)
       - name: Post-Failure Debugging
         if: failure()
         run: |
-          echo "--- Disk Space Analysis ---"
+          echo "--- Host Swap Status ---"
+          swapon --show
+          echo "--- Host Disk Analysis ---"
           df -h
-          df -i
-          echo "--- Memory and Swap Analysis ---"
-          free -m
-          echo "--- Checking libxul.so status ---"
-          ls -lh ${{ github.workspace }}/external/gecko/dist/bin/libxul.so || echo "libxul.so not found"
-          echo "--- Recent System Logs (dmesg) ---"
-          dmesg | tail -n 50
+          # Since we are now on the host, we check dmesg for the OOM Killer
+          echo "--- Host System Logs (dmesg) ---"
+          sudo dmesg | tail -n 100
 
       - name: Upload APK
-        if: always() # Change to always() or success() depending on if you want partial APKs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: IronFox-${{ github.event.inputs.arch }}
