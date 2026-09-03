@@ -70,6 +70,7 @@ jobs:
             -v ${{ github.workspace }}:/__w/IronFox-mod/IronFox-mod \
             -w /__w/IronFox-mod/IronFox-mod \
             -e IRONFOX_CI="1" \
+            -e IRONFOX_SB="thin" \
             -e MOZ_BUILD_CONCURRENCY=1 \
             -e MOZ_LTO=0 \
             -e UV_LINK_MODE="copy" \
