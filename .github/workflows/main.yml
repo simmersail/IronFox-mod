@@ -61,7 +61,11 @@ jobs:
               curl -s -X POST -d \"one_minute_package=\$PACKAGE\" $MONITOR_URL > /dev/null
             done
           " &
-
+      - name: Fix Build Config
+        run: |
+          sed -i 's/IRONFOX_SB=1/IRONFOX_SB=thin/g' configs/mozconfigs/ironfox.mozconfig
+          sed -i 's/MOZ_LTO=full/MOZ_LTO=0/g' configs/mozconfigs/ironfox.mozconfig
+    
       # STEP 3: Build in Container with 'tee' for live logs + file
       - name: Build in Container
         run: |
