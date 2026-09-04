@@ -152,7 +152,10 @@ jobs:
           df -h
           echo "--- Host System Logs (dmesg) ---"
           sudo dmesg | tail -n 100
-
+          
+      - name: Fix Permissions for Artifact Upload
+        run: sudo chown -R runner:docker ${{ github.workspace }}
+        
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
