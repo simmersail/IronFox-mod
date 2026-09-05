@@ -138,7 +138,15 @@ jobs:
               # Then use sed to replace the trailing 0 or 1 with 'thin'
               grep -rlE "IRONFOX_SB=[01]|--enable-ironfox-sb=[01]|--with-ironfox-sb=[01]" . | xargs sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)[01]/\1thin/g' || true
               # ----------------------------
-              
+
+              # --- VERIFICATION STEP ---
+              echo 'Verifying that no SB=0 or SB=1 remains in branding configs...'
+              # This will print every line containing 'ironfox-sb' to the GitHub log
+              # If you see a '0' or '1' here, the Nuclear Fix failed.
+              grep -r "ironfox-sb" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/ || echo "No SB options found in branding directory."
+              # ---------------------------
+
+       
               
               echo 'Starting GeckoView build...'
               yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
