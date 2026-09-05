@@ -131,6 +131,12 @@ jobs:
               
               rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
               yes | ./scripts/get_sources.sh
+
+                            # --- INSERT FIX HERE ---
+              echo 'Applying IRONFOX_SB fix to mozconfig...'
+              sed -i 's/IRONFOX_SB=[01]/IRONFOX_SB=thin/g' configs/mozconfigs/ironfox.mozconfig
+              sed -i 's/--with-ironfox-sb=[01]/--with-ironfox-sb=thin/g' configs/mozconfigs/ironfox.mozconfig
+              # -----------------------
               
               echo 'Starting GeckoView build...'
               yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
