@@ -132,11 +132,15 @@ jobs:
               rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
               yes | ./scripts/get_sources.sh
 
-                            # --- INSERT FIX HERE ---
-              echo 'Applying IRONFOX_SB fix to mozconfig...'
-              sed -i 's/IRONFOX_SB=[01]/IRONFOX_SB=thin/g' configs/mozconfigs/ironfox.mozconfig
-              sed -i 's/--with-ironfox-sb=[01]/--with-ironfox-sb=thin/g' configs/mozconfigs/ironfox.mozconfig
-              # -----------------------
+                  # --- NUCLEAR FIX FOR SB ---
+              echo 'Searching and replacing all instances of SB=0 across the workspace...'
+              # This finds any file containing IRONFOX_SB=0 or --with-ironfox-sb=0 and replaces it with 'thin'
+              grep -rl "IRONFOX_SB=0" . | xargs sed -i 's/IRONFOX_SB=0/IRONFOX_SB=thin/g' || true
+              grep -rl "IRONFOX_SB=1" . | xargs sed -i 's/IRONFOX_SB=1/IRONFOX_SB=thin/g' || true
+              grep -rl "--with-ironfox-sb=0" . | xargs sed -i 's/--with-ironfox-sb=0/--with-ironfox-sb=thin/g' || true
+              grep -rl "--with-ironfox-sb=1" . | xargs sed -i 's/--with-ironfox-sb=1/--with-ironfox-sb=thin/g' || true
+              # ---------------------------
+              
               
               echo 'Starting GeckoView build...'
               yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
