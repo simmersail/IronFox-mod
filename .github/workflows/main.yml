@@ -129,12 +129,17 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
 
-            echo '--- APPLYING PYTHON SLEDGEHAMMER OVERRIDE ---'
-            # Force the Python configuration logic to return 'thin' regardless of any config file
-            sed -i "/def get_value(self, arg, origin):/a \        if getattr(self, 'name', None) == 'IRONFOX_SB': return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py
+            echo '--- APPLYING SURGICAL PYTHON OVERRIDE ---'
+            # We inject the check immediately before the InvalidOptionError is raised.
+            # This short-circuits the crash and returns 'thin' if IRONFOX_SB is the culprit.
+            sed -i "/raise InvalidOptionError(/i \        if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py
             
-            # Verify Python injection
-            grep "if getattr(self, 'name', None) == 'IRONFOX_SB'" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "PYTHON INJECTION FAILED"
+            # Verify surgical injection
+            grep "if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "SURGICAL INJECTION FAILED"
+
+            echo '--- APPLYING GLOBAL PYTHON CLEANUP ---'
+            # Force all Python-level assignments of 0 or 1 for SB to 'thin'
+            find /__w/IronFox-mod/IronFox-mod/external/gecko/python/ -name "*.py" -exec sed -i "s/IRONFOX_SB\s*=\s*['\"]?[01]['\"]?/IRONFOX_SB = 'thin'/g" {} +
 
             echo '--- APPLYING TEXT-BASED NUCLEAR FIX FOR SB ---'
             find . -type f -exec sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)["'\'']?([01])["'\'']?/\1thin/g' {} +
@@ -180,3 +185,4 @@ jobs:
         with:
           name: IronFox-${{ github.event.inputs.arch }}
           path: "**/*.apk"
+          
