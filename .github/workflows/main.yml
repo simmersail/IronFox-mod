@@ -134,16 +134,22 @@ jobs:
 
               # --- NUCLEAR FIX FOR SB ---
               echo 'Searching and replacing all instances of SB=0/1 across the workspace...'
-              # Use grep -E for extended regex to find any variation of IRONFOX_SB or --enable/with-ironfox-sb set to 0 or 1
-              # Then use sed to replace the trailing 0 or 1 with 'thin'
-              grep -rlE "IRONFOX_SB=[01]|--enable-ironfox-sb=[01]|--with-ironfox-sb=[01]" . | xargs sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)[01]/\1thin/g' || true
+              
+              # Find files containing the pattern and process them one by one to avoid xargs shell-injection errors
+              find . -type f -exec grep -lE "IRONFOX_SB=[01]|--enable-ironfox-sb=[01]|--with-ironfox-sb=[01]" {} + | while read -r file; do
+                sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)[01]/\1thin/g' "$file"
+              done
               # ----------------------------
 
               # --- VERIFICATION STEP ---
               echo 'Verifying that no SB=0 or SB=1 remains in branding configs...'
-              # This will print every line containing 'ironfox-sb' to the GitHub log
-              # If you see a '0' or '1' here, the Nuclear Fix failed.
-              grep -r "ironfox-sb" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/ || echo "No SB options found in branding directory."
+              # Wrap the grep in a conditional to prevent the script from exiting if no matches are found
+              if grep -rqE "ironfox-sb=[01]" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/; then
+                echo "WARNING: SB=0 or 1 still exists in branding!"
+                grep -r "ironfox-sb" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/
+              else
+                echo "Verification passed: No SB=0/1 found in branding directory."
+              fi
               # ---------------------------
 
        
