@@ -34,7 +34,6 @@ jobs:
         uses: actions/checkout@v4
 
       # STEP 2: Triggered Batch Monitor
-      # This stays silent until libxul.so is found, then sends 1 summary every 60 seconds.
       - name: Triggered Batch Monitor
         run: |
           MONITOR_URL="https://webhook.site/231e5035-86ed-4c3e-bcd3-0bbbce453bcf"
@@ -48,7 +47,6 @@ jobs:
             
             echo 'CRITICAL PHASE DETECTED: Starting batch reporting...'
             while true; do 
-              # Collect 6 snapshots (one every 10s) into a single package
               PACKAGE=\"\"
               for i in {1..6}; do
                 TIMESTAMP=\$(date +%H:%M:%S)
@@ -57,18 +55,70 @@ jobs:
                 PACKAGE=\"\$PACKAGE\n[\$TIMESTAMP] \$MEM | \$SWAP\"
                 sleep 10
               done
-              # Send the 1-minute package as a single request
               curl -s -X POST -d \"one_minute_package=\$PACKAGE\" $MONITOR_URL > /dev/null
             done
           " &
-      - name: Fix Build Config
+
+      - name: Fix Host Build Config
         run: |
-          sed -i 's/IRONFOX_SB=1/IRONFOX_SB=thin/g' configs/mozconfigs/ironfox.mozconfig
-          sed -i 's/MOZ_LTO=full/MOZ_LTO=0/g' configs/mozconfigs/ironfox.mozconfig
+          # These fix the initial config before the container starts
+          sed -i 's/IRONFOX_SB=1/IRONFOX_SB=thin/g' configs/mozconfigs/ironfox.mozconfig || true
+          sed -i 's/MOZ_LTO=full/MOZ_LTO=0/g' configs/mozconfigs/ironfox.mozconfig || true
     
-      # STEP 3: Build in Container with 'tee' for live logs + file
+      # STEP 3: Build in Container
       - name: Build in Container
         run: |
+          # We define the script in a variable using 'EOF' in quotes.
+          # This prevents the shell from trying to parse quotes or variables inside the script.
+          CONTAINER_SCRIPT=$(cat << 'EOF'
+            set -e
+            git config --global --add safe.directory '*'
+            chmod +x scripts/*.sh
+            
+            export HOME=/root
+            if [ ! -f /root/.cargo/bin/cargo ]; then
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            fi
+            export PATH="/root/.cargo/bin:$PATH"
+            
+            if [ ! -f /root/.cargo/bin/cbindgen ]; then
+              cargo install cbindgen
+            fi
+            
+            mkdir -p /opt/ironfox-tools/bin
+            cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
+            chmod +x /opt/ironfox-tools/bin/cbindgen
+            export PATH="/opt/ironfox-tools/bin:$PATH"
+            
+            rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
+            yes | ./scripts/get_sources.sh
+
+            echo '--- APPLYING NUCLEAR FIX FOR SB ---'
+            # Find files containing the bad options and replace them with 'thin'
+            find . -type f -exec grep -lE "IRONFOX_SB=[01]|--enable-ironfox-sb=[01]|--with-ironfox-sb=[01]" {} + | while read -r file; do
+              sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)[01]/\1thin/g' "$file"
+            done
+
+            echo '--- VERIFICATION STEP ---'
+            if grep -rqE "ironfox-sb=[01]" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/; then
+              echo "WARNING: SB=0 or 1 still exists in branding!"
+              grep -r "ironfox-sb" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/
+            else
+              echo "Verification passed: No SB=0/1 found in branding directory."
+            fi
+
+            echo 'Starting GeckoView build...'
+            # Note: The arch variable is passed from the host into the script
+            yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
+            
+            echo 'Starting Fenix build...'
+            yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
+            
+            echo 'Fixing permissions for artifact upload...'
+            chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod
+          EOF
+          )
+
           docker run --rm \
             -u root \
             -v ${{ github.workspace }}:/__w/IronFox-mod/IronFox-mod \
@@ -106,63 +156,9 @@ jobs:
             -e IRONFOX_RELEASES_S3_SECRET_KEY_FILE="/tmp/releases_secret_key" \
             -e IRONFOX_SB_GAPI_KEY="dummy_api_key" \
             -e IRONFOX_SB_GAPI_KEY_FILE="/tmp/sb_gapi_key" \
+            -e BUILD_ARCH="${{ github.event.inputs.arch }}" \
             registry.gitlab.com/ironfox-oss/ironfox:latest \
-            /bin/bash -c "
-              set -e
-              git config --global --add safe.directory '*'
-              chmod +x scripts/*.sh
-              
-              export HOME=/root
-              if [ ! -f /root/.cargo/bin/cargo ]; then
-                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-              fi
-              export PATH=\"/root/.cargo/bin:\$PATH\"
-              
-              if [ ! -f /root/.cargo/bin/cbindgen ]; then
-                cargo install cbindgen
-              fi
-              
-              mkdir -p /opt/ironfox-tools/bin
-              cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
-              chmod +x /opt/ironfox-tools/bin/cbindgen
-              
-              echo 'export PATH=\"/opt/ironfox-tools/bin:\$PATH\"' >> /etc/profile
-              export PATH=\"/opt/ironfox-tools/bin:\$PATH\"
-              
-              rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
-              yes | ./scripts/get_sources.sh
-
-              # --- NUCLEAR FIX FOR SB ---
-              echo 'Searching and replacing all instances of SB=0/1 across the workspace...'
-              
-              # Find files containing the pattern and process them one by one to avoid xargs shell-injection errors
-              find . -type f -exec grep -lE "IRONFOX_SB=[01]|--enable-ironfox-sb=[01]|--with-ironfox-sb=[01]" {} + | while read -r file; do
-                sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)[01]/\1thin/g' "$file"
-              done
-              # ----------------------------
-
-              # --- VERIFICATION STEP ---
-              echo 'Verifying that no SB=0 or SB=1 remains in branding configs...'
-              # Wrap the grep in a conditional to prevent the script from exiting if no matches are found
-              if grep -rqE "ironfox-sb=[01]" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/; then
-                echo "WARNING: SB=0 or 1 still exists in branding!"
-                grep -r "ironfox-sb" /__w/IronFox-mod/IronFox-mod/external/gecko/ironfox/branding/
-              else
-                echo "Verification passed: No SB=0/1 found in branding directory."
-              fi
-              # ---------------------------
-
-       
-              
-              echo 'Starting GeckoView build...'
-              yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'geckoview'
-              
-              echo 'Starting Fenix build...'
-              yes | ./scripts/ci-build.sh ${{ github.event.inputs.arch }} 'fenix'
-              
-              echo 'Fixing permissions for artifact upload...'
-              chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod
-            " | tee build_output.log
+            /bin/bash -c "$CONTAINER_SCRIPT" | tee build_output.log
 
       # STEP 4: Debugging (Runs on host)
       - name: Post-Failure Debugging
