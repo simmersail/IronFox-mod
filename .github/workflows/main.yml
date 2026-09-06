@@ -136,11 +136,15 @@ jobs:
             find . -type f -exec sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)["'\'']?([01])["'\'']?/\1thin/g' {} +
 
             echo '--- GLOBAL VERIFICATION STEP ---'
-            # Search the entire project for any remaining 0 or 1 assignments to SB
-            if grep -rE "IRONFOX_SB=['\"]?[01]['\"]?" . ; then
-              echo "CRITICAL WARNING: SB=0 or 1 still exists in the project!"
+            # Count exactly how many instances of SB=0 or SB=1 remain
+            SB_COUNT=$(grep -rE "IRONFOX_SB=['\"]?[01]['\"]?" . | wc -l)
+            echo "SB=0/1 Count: $SB_COUNT"
+
+            if [ "$SB_COUNT" -eq 0 ]; then
+              echo "Verification passed: Project is clean."
             else
-              echo "Verification passed: All SB values set to thin."
+              echo "WARNING: $SB_COUNT instances of SB=0/1 still exist!"
+              grep -rE "IRONFOX_SB=['\"]?[01]['\"]?" . | head -n 20
             fi
 
             echo 'Starting GeckoView build...'
