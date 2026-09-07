@@ -132,14 +132,19 @@ jobs:
             echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
             
-            echo '--- APPLYING SURGICAL PYTHON PATCH ---'
-            python3 -c "import sys; path='/__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py'; f=open(path,'r'); lines=f.readlines(); f.close(); [lines.insert(i, f'{line[:len(line)-len(line.lstrip())]}if \"IRONFOX_SB\" in str(self): return \"thin\", origin\n') for i,line in enumerate(lines) if 'raise InvalidOptionError(' in line]; f=open(path,'w'); f.writelines(lines); f.close(); print('PATCH SUCCESSFUL')"
+            echo '--- APPLYING SURGICAL PYTHON PATCH (PRINTF METHOD) ---'
+            printf 'import sys\nimport os\ntry:\n    path = "/__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py"\n    with open(path, "r") as f:\n        lines = f.readlines()\n    new_lines = []\n    for line in lines:\n        if "raise InvalidOptionError(" in line:\n            indent = line[:len(line) - len(line.lstrip())]\n            new_lines.append(f"{indent}if \"IRONFOX_SB\" in str(self): return \"thin\", origin\\n")\n        new_lines.append(line)\n    with open(path, "w") as f:\n        f.writelines(new_lines)\n    print("PATCH SUCCESSFUL")\nexcept Exception as e:\n    print(f"ERROR: {e}")\n    sys.exit(1)\n' > patch_sb.py
+            
+            python3 patch_sb.py
             
             echo '--- MEMORY DIAGNOSIS: POST-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
 
             # Verify surgical injection
-            grep "if \"IRONFOX_SB\" in str(self): return \"thin\", origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "SURGICAL INJECTION FAILED"
+            if ! grep -q "if \"IRONFOX_SB\" in str(self): return \"thin\", origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py; then
+                echo "CRITICAL: SURGICAL INJECTION FAILED."
+                exit 1
+            fi
 
             echo '--- APPLYING GLOBAL PYTHON CLEANUP ---'
             find /__w/IronFox-mod/IronFox-mod/external/gecko/python/ -name "*.py" -exec sed -i "s/IRONFOX_SB\s*=\s*['\"]?[01]['\"]?/IRONFOX_SB = 'thin'/g" {} +
@@ -160,7 +165,6 @@ jobs:
             echo 'Fixing permissions for artifact upload...'
             chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod
             EOF
-
       # STEP 4: Debugging (Runs on host)
       - name: Post-Failure Debugging
         if: failure()
