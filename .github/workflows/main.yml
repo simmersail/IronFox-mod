@@ -129,14 +129,14 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
             
-                        echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
-            free -m
+            echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
+            cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
             
             echo '--- APPLYING SURGICAL PYTHON PATCH ---'
             python3 -c "import sys; path='/__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py'; f=open(path,'r'); lines=f.readlines(); f.close(); [lines.insert(i, f'{line[:len(line)-len(line.lstrip())]}if \"IRONFOX_SB\" in str(self): return \"thin\", origin\n') for i,line in enumerate(lines) if 'raise InvalidOptionError(' in line]; f=open(path,'w'); f.writelines(lines); f.close(); print('PATCH SUCCESSFUL')"
             
             echo '--- MEMORY DIAGNOSIS: POST-PATCH ---'
-            free -m
+            cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
 
             # Verify surgical injection
             grep "if \"IRONFOX_SB\" in str(self): return \"thin\", origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "SURGICAL INJECTION FAILED"
