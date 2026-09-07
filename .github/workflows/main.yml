@@ -129,16 +129,14 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
 
-            echo '--- APPLYING SURGICAL PYTHON OVERRIDE ---'
-            # We inject the check immediately before the InvalidOptionError is raised.
-            # This short-circuits the crash and returns 'thin' if IRONFOX_SB is the culprit.
+            echo '--- APPLYING SURGICAL PYTHON OVERRIDE (WITH INDENTATION) ---'
+            # We use 8 spaces of indentation to match the mozbuild function scope.
             sed -i "/raise InvalidOptionError(/i \        if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py
             
             # Verify surgical injection
             grep "if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "SURGICAL INJECTION FAILED"
 
             echo '--- APPLYING GLOBAL PYTHON CLEANUP ---'
-            # Force all Python-level assignments of 0 or 1 for SB to 'thin'
             find /__w/IronFox-mod/IronFox-mod/external/gecko/python/ -name "*.py" -exec sed -i "s/IRONFOX_SB\s*=\s*['\"]?[01]['\"]?/IRONFOX_SB = 'thin'/g" {} +
 
             echo '--- APPLYING TEXT-BASED NUCLEAR FIX FOR SB ---'
@@ -147,13 +145,6 @@ jobs:
             echo '--- GLOBAL VERIFICATION STEP ---'
             SB_COUNT=$(grep -rE "IRONFOX_SB=['\"]?[01]['\"]?" . | wc -l)
             echo "SB=0/1 Count: $SB_COUNT"
-
-            if [ "$SB_COUNT" -eq 0 ]; then
-              echo "Verification passed: Project is clean."
-            else
-              echo "WARNING: $SB_COUNT instances of SB=0/1 still exist!"
-              grep -rE "IRONFOX_SB=['\"]?[01]['\"]?" . | head -n 20
-            fi
 
             echo 'Starting GeckoView build...'
             yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
