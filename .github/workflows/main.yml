@@ -135,11 +135,13 @@ jobs:
             echo '--- APPLYING SURGICAL PYTHON PATCH (PRINTF METHOD) ---'
             printf "import sys\nimport os\ntry:\n    path = '/__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py'\n    with open(path, 'r') as f:\n        lines = f.readlines()\n    new_lines = []\n    for line in lines:\n        if 'raise InvalidOptionError(' in line:\n            indent = line[:len(line) - len(line.lstrip())]\n            new_lines.append(f\"{indent}if 'IRONFOX_SB' in str(self): return 'thin', origin\\\\n\")\n        new_lines.append(line)\n    with open(path, 'w') as f:\n        f.writelines(new_lines)\n    print('PATCH SUCCESSFUL')\nexcept Exception as e:\n    print(f'ERROR: {e}')\n    sys.exit(1)\n" > patch_sb.py
             
+            python3 patch_sb.py
+            
             echo '--- MEMORY DIAGNOSIS: POST-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
 
-            # Verify surgical injection
-            if ! grep -q "if \"IRONFOX_SB\" in str(self): return \"thin\", origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py; then
+            # Verify surgical injection - Now using SINGLE QUOTES to match the Python script
+            if ! grep -q "if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py; then
                 echo "CRITICAL: SURGICAL INJECTION FAILED."
                 exit 1
             fi
