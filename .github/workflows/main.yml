@@ -128,13 +128,12 @@ jobs:
             
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
-
-            echo '--- APPLYING SURGICAL PYTHON OVERRIDE (WITH INDENTATION) ---'
-            # We use 8 spaces of indentation to match the mozbuild function scope.
-            sed -i "/raise InvalidOptionError(/i \        if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py
+            
+            echo '--- APPLYING SURGICAL PYTHON PATCH (WHITESPACE SAFE) ---'
+            python3 -c "import sys; path='/__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py'; f=open(path,'r'); lines=f.readlines(); f.close(); [lines.insert(i, f'{line[:len(line)-len(line.lstrip())]}if \"IRONFOX_SB\" in str(self): return \"thin\", origin\n') for i,line in enumerate(lines) if 'raise InvalidOptionError(' in line]; f=open(path,'w'); f.writelines(lines); f.close()"
             
             # Verify surgical injection
-            grep "if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "SURGICAL INJECTION FAILED"
+            grep "if \"IRONFOX_SB\" in str(self): return \"thin\", origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py || echo "SURGICAL INJECTION FAILED"
 
             echo '--- APPLYING GLOBAL PYTHON CLEANUP ---'
             find /__w/IronFox-mod/IronFox-mod/external/gecko/python/ -name "*.py" -exec sed -i "s/IRONFOX_SB\s*=\s*['\"]?[01]['\"]?/IRONFOX_SB = 'thin'/g" {} +
