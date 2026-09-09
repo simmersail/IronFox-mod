@@ -61,7 +61,9 @@ jobs:
 
       - name: Fix Host Build Config
         run: |
-          sed -i 's/IRONFOX_SB=1/IRONFOX_SB=thin/g' configs/mozconfigs/ironfox.mozconfig || true
+          # METHOD 2: Delete the entire SB logic block to prevent InvalidOptionError
+          sed -i '/IRONFOX_SB=0/,/readonly IRONFOX_SB/d' configs/mozconfigs/ironfox.mozconfig || true
+          # Force LTO to 0 to prevent OOM during final link/package
           sed -i 's/MOZ_LTO=full/MOZ_LTO=0/g' configs/mozconfigs/ironfox.mozconfig || true
     
       # STEP 3: Build in Container
@@ -75,6 +77,7 @@ jobs:
             -e IRONFOX_SB="thin" \
             -e MOZ_BUILD_CONCURRENCY=1 \
             -e MOZ_LTO=0 \
+            -e GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m" \
             -e UV_LINK_MODE="copy" \
             -e CBINDGEN=/opt/ironfox-tools/bin/cbindgen \
             -e CI_COMMIT_REF_NAME="${{ github.ref_name }}" \
@@ -129,6 +132,10 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
             
+            echo '--- POST-RESET SANITY CHECK: SB BLOCK REMOVAL ---'
+            # Re-apply the surgical deletion in case get_sources.sh or ci-build.sh reset the config
+            sed -i '/IRONFOX_SB=0/,/readonly IRONFOX_SB/d' configs/mozconfigs/ironfox.mozconfig || true
+            
             echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
             
@@ -140,7 +147,7 @@ jobs:
             echo '--- MEMORY DIAGNOSIS: POST-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
 
-            # Verify surgical injection - Now using SINGLE QUOTES to match the Python script
+            # Verify surgical injection
             if ! grep -q "if 'IRONFOX_SB' in str(self): return 'thin', origin" /__w/IronFox-mod/IronFox-mod/external/gecko/python/mozbuild/mozbuild/configure/options.py; then
                 echo "CRITICAL: SURGICAL INJECTION FAILED."
                 exit 1
