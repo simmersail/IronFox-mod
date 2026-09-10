@@ -102,19 +102,10 @@ else
 fi
 
 # We should only try to load the Safe Browsing API key file if we're *building* Gecko
-IRONFOX_SB=0
-if [[ "${IRONFOX_MACH_TARGET_PROJECT}" == 'gecko' ]] && [[ "${IRONFOX_MACH_BUILD}" == 1 ]]; then
-  if [[ "${IRONFOX_SB_GAPI_KEY_FILE}" != 'null' ]] || [[ "${IRONFOX_CI}" == 1 ]]; then
-    IRONFOX_SB=1
-  fi
-fi
+IRONFOX_SB="thin"
 readonly IRONFOX_SB
+ac_add_options --without-google-safebrowsing-api-keyfile
 
-if [[ "${IRONFOX_SB}" == 1 ]]; then
-  ac_add_options --with-google-safebrowsing-api-keyfile="${IRONFOX_SB_GAPI_KEY_FILE}"
-else
-  ac_add_options --without-google-safebrowsing-api-keyfile
-fi
 
 # Apply project-specific options
 if [[ "${IRONFOX_MACH_TARGET_PROJECT}" == 'ac-core' ]]; then
