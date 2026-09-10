@@ -64,7 +64,7 @@ jobs:
           # METHOD 2: Delete the entire SB logic block to prevent InvalidOptionError
           sed -i '/IRONFOX_SB=0/,/readonly IRONFOX_SB/d' configs/mozconfigs/ironfox.mozconfig || true
           # Force LTO to 0 to prevent OOM during final link/package
-          sed -i 's/MOZ_LTO=full/MOZ_LTO=0/g' configs/mozconfigs/ironfox.mozconfig || true
+          # sed -i 's/MOZ_LTO=full/MOZ_LTO=0/g' configs/mozconfigs/ironfox.mozconfig || true
     
       # STEP 3: Build in Container
       - name: Build in Container
@@ -76,7 +76,7 @@ jobs:
             -e IRONFOX_CI="1" \
             -e IRONFOX_SB="thin" \
             -e MOZ_BUILD_CONCURRENCY=1 \
-            -e MOZ_LTO=0 \
+            -e MOZ_LTO="full" \
             -e GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m" \
             -e UV_LINK_MODE="copy" \
             -e CBINDGEN=/opt/ironfox-tools/bin/cbindgen \
@@ -156,9 +156,19 @@ jobs:
             echo '--- APPLYING GLOBAL PYTHON CLEANUP ---'
             find /__w/IronFox-mod/IronFox-mod/external/gecko/python/ -name "*.py" -exec sed -i "s/IRONFOX_SB\s*=\s*['\"]?[01]['\"]?/IRONFOX_SB = 'thin'/g" {} +
 
-            echo '--- APPLYING TEXT-BASED NUCLEAR FIX FOR SB ---'
-            find . -type f -exec sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)["'\'']?([01])["'\'']?/\1thin/g' {} +
+            # 2. Clear the mozbuild cache to ensure a clean virtualenv transition
+            rm -rf /__w/IronFox-mod/IronFox-mod/build/.mozbuild
 
+            # 3. Apply the surgical patches
+            python3 patch_sb.py
+            sed -i '/IRONFOX_SB=0/,/readonly IRONFOX_SB/d' configs/mozconfigs/ironfox.mozconfig || true
+
+            # 4. Short sleep to allow disk I/O to settle before mach starts
+            sleep 10
+            
+            # echo '--- APPLYING TEXT-BASED NUCLEAR FIX FOR SB ---'
+            # find . -type f -exec sed -i -E 's/(IRONFOX_SB=|--enable-ironfox-sb=|--with-ironfox-sb=)["'\'']?([01])["'\'']?/\1thin/g' {} +
+            
             echo '--- GLOBAL VERIFICATION STEP ---'
             SB_COUNT=$(grep -rE "IRONFOX_SB=['\"]?[01]['\"]?" . | wc -l)
             echo "SB=0/1 Count: $SB_COUNT"
