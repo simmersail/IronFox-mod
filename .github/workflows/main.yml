@@ -119,11 +119,11 @@ jobs:
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
             
             echo 'Starting GeckoView build...'
-            yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
-            
+            yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'geckoview'
+
             echo 'Starting Fenix build...'
-            yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
-            
+            yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'fenix'
+
             echo 'Build complete. Exiting container...'
             EOF
 
