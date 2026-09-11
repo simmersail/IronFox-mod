@@ -1,4 +1,4 @@
-name: IronFox Professional Build
+ename: IronFox Professional Build
 on:
   workflow_dispatch:
     inputs:
@@ -59,7 +59,6 @@ jobs:
             done
           " &
 
-
       # STEP 3: Build in Container
       - name: Build in Container
         run: |
@@ -70,7 +69,7 @@ jobs:
             -e IRONFOX_CI="1" \
             -e IRONFOX_SB="thin" \
             -e MOZ_BUILD_CONCURRENCY=1 \
-            -e MOZ_LTO="full" \
+            -e MOZ_LTO="0" \
             -e GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m" \
             -e UV_LINK_MODE="copy" \
             -e CBINDGEN=/opt/ironfox-tools/bin/cbindgen \
@@ -81,27 +80,16 @@ jobs:
             -e IRONFOX_LOG_SOURCES="1" \
             -e IRONFOX_CI_PREP_S3_ARTIFACTS="1" \
             -e IRONFOX_CI_PREP_S3_RELEASES="1" \
-            -e IRONFOX_CI_PREP_SB_GAPI_KEY="1" \
             -e IRONFOX_CI_PREP_ANDROID_KEYSTORE="0" \
+            -e IRONFOX_SB_GAPI_KEY="dummy_api_key" \
             -e IRONFOX_ARTIFACTS_S3_ACCESS_KEY="dummy_key" \
             -e IRONFOX_ARTIFACTS_S3_SECRET_KEY="dummy_secret" \
             -e IRONFOX_ARTIFACTS_S3_BUCKET_NAME="dummy_bucket" \
             -e IRONFOX_ARTIFACTS_S3_ENDPOINT="dummy_endpoint" \
-            -e IRONFOX_ARTIFACTS_S3_ACCESS_KEY_FILE="/tmp/artifacts_access_key" \
-            -e IRONFOX_ARTIFACTS_S3_BUCKET_NAME_FILE="/tmp/artifacts_bucket_name" \
-            -e IRONFOX_ARTIFACTS_S3_ENDPOINT_FILE="/tmp/artifacts_endpoint" \
-            -e IRONFOX_ARTIFACTS_S3_SECRET_KEY_FILE="/tmp/artifacts_secret_key" \
             -e IRONFOX_RELEASES_S3_ACCESS_KEY="dummy_key" \
             -e IRONFOX_RELEASES_S3_SECRET_KEY="dummy_secret" \
             -e IRONFOX_RELEASES_S3_BUCKET_NAME="dummy_bucket" \
             -e IRONFOX_RELEASES_S3_ENDPOINT="dummy_endpoint" \
-            -e IRONFOX_RELEASES_S3_ACCESS_KEY_FILE="/tmp/releases_access_key" \
-            -e IRONFOX_RELEASES_S3_BUCKET_NAME_FILE="/tmp/releases_bucket_name" \
-            -e IRONFOX_RELEASES_S3_ENDPOINT_FILE="/tmp/releases_endpoint" \
-            -e IRONFOX_RELEASES_S3_SECRET_KEY_FILE="/tmp/releases_secret_key" \
-            -e IRONFOX_SB_GAPI_KEY="dummy_api_key" \
-            -e IRONFOX_SB_GAPI_KEY_FILE="/tmp/sb_gapi_key" \
-            -e BUILD_ARCH="${{ github.event.inputs.arch }}" \
             registry.gitlab.com/ironfox-oss/ironfox:latest \
             /bin/bash << 'EOF' | tee build_output.log
             set -e
@@ -126,7 +114,6 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
             
-            
             echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
             
@@ -136,17 +123,15 @@ jobs:
             echo 'Starting Fenix build...'
             yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
             
-            echo 'Fixing permissions for artifact upload...'
-            chown -R 1001:1001 /__w/IronFox-mod/IronFox-mod
+            echo 'Build complete. Exiting container...'
             EOF
-      # STEP 4: Debugging (Runs on host)
+
+      # STEP 4: Post-Failure Debugging
       - name: Post-Failure Debugging
         if: failure()
         run: |
           echo "--- Host Swap Status ---"
           swapon --show
-          echo "--- Host Disk Analysis ---"
-          df -h
           echo "--- Host System Logs (dmesg) ---"
           sudo dmesg | tail -n 100
           
@@ -158,5 +143,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
          name: IronFox-${{ github.event.inputs.arch }}
-         path: /__w/IronFox-mod/IronFox-mod/outputs/aar/*.apk
-
+         # Changed to relative path to ensure GitHub finds the file
+         path: outputs/aar/*.apk
+         
