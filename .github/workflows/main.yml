@@ -1,4 +1,4 @@
-ename: IronFox Professional Build
+name: IronFox Professional Build
 on:
   workflow_dispatch:
     inputs:
