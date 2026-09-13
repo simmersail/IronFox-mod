@@ -121,6 +121,8 @@ jobs:
 
             echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
             chmod +x ./scripts/ci-upload-artifacts-if.sh
+            echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
+            chmod +x ./scripts/ci-prep.sh
             
             echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
