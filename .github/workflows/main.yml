@@ -101,7 +101,7 @@ jobs:
             set -e
             # --- FIX: Create the dummy file the build script is looking for ---
             mkdir -p /opt/IronFox/
-            touch /opt/IronFox/ironfox-sb-gapi-key.txt
+            echo "disabled" > /opt/IronFox/ironfox-sb-gapi-key.txt
             git config --global --add safe.directory '*'
             chmod +x scripts/*.sh
             
