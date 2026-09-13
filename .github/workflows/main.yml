@@ -91,6 +91,10 @@ jobs:
             -e IRONFOX_RELEASES_S3_SECRET_KEY="dummy_secret" \
             -e IRONFOX_RELEASES_S3_BUCKET_NAME="dummy_bucket" \
             -e IRONFOX_RELEASES_S3_ENDPOINT="dummy_endpoint" \
+            -e IRONFOX_CI_PREP_ANDROID_KEYSTORE="0" \
+            -e IRONFOX_ANDROID_KEYSTORE_KEY_PASS="dummy_pass" \
+            -e IRONFOX_ANDROID_KEYSTORE_STORE_PASS="dummy_pass" \
+            
             registry.gitlab.com/ironfox-oss/ironfox:latest \
             /bin/bash << 'EOF' | tee build_output.log
             set -e
