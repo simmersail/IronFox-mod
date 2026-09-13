@@ -82,7 +82,8 @@ jobs:
             -e IRONFOX_CI_PREP_S3_ARTIFACTS="0" \
             -e IRONFOX_CI_PREP_S3_RELEASES="0" \
             -e IRONFOX_CI_PREP_ANDROID_KEYSTORE="0" \
-            -e IRONFOX_SB_GAPI_KEY="dummy_api_key" \
+            -e IRONFOX_SB_GAPI_KEY="" \
+            -e IRONFOX_SB_GAPI_KEY_FILE="" \
             -e IRONFOX_ARTIFACTS_S3_ACCESS_KEY="dummy_key" \
             -e IRONFOX_ARTIFACTS_S3_SECRET_KEY="dummy_secret" \
             -e IRONFOX_ARTIFACTS_S3_BUCKET_NAME="dummy_bucket" \
@@ -98,6 +99,9 @@ jobs:
             registry.gitlab.com/ironfox-oss/ironfox:latest \
             /bin/bash << 'EOF' | tee build_output.log
             set -e
+            # --- FIX: Create the dummy file the build script is looking for ---
+            mkdir -p /opt/IronFox/
+            touch /opt/IronFox/ironfox-sb-gapi-key.txt
             git config --global --add safe.directory '*'
             chmod +x scripts/*.sh
             
