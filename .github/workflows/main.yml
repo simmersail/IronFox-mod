@@ -96,6 +96,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_KEY_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_STORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
+            -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
             registry.gitlab.com/ironfox-oss/ironfox:latest \
             /bin/bash << 'EOF' | tee build_output.log
             set -e
