@@ -103,7 +103,7 @@ jobs:
             # --- FIX: Create the dummy file the build script is looking for ---
             mkdir -p /opt/IronFox/
             # Fix for Keystore existence check
-            touch /opt/IronFox/ironfox-android-keystore.jks
+            echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
             echo "disabled" > /opt/IronFox/ironfox-sb-gapi-key.txt
             git config --global --add safe.directory '*'
             chmod +x scripts/*.sh
