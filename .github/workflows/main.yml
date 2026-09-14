@@ -130,6 +130,9 @@ jobs:
             chmod +x ./scripts/ci-upload-artifacts-if.sh
             echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
             chmod +x ./scripts/ci-prep.sh
+            # Remove obsolete patch that is already integrated into the source
+            rm -f /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+
             
             echo '--- MEMORY DIAGNOSIS: PRE-PATCH ---'
             cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree'
