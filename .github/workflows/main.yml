@@ -111,10 +111,10 @@ jobs:
             set -e
             
             # --- FIX 1: Bypass Patch Validation ---
-            # Create the dummy patch file before get_sources.sh runs
+            # Create a syntactically valid but empty unified diff patch using printf
             mkdir -p /__w/IronFox-mod/IronFox-mod/patches
-            echo "dummy patch" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
-            
+            printf "--- a/dummy.txt\n+++ b/dummy.txt\n@@ -0,0 +0,0 @@\n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+
             # --- FIX 2: Standard environment traps ---
             mkdir -p /opt/IronFox/
             echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
