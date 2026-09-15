@@ -112,7 +112,7 @@ jobs:
             
             # --- FIX 1: Bypass Patch Validation ---
             mkdir -p /__w/IronFox-mod/IronFox-mod/patches
-            printf -- "--- a/dummy.txt\n+++ b/dummy.txt\n@@ -0,0 +0,0 @@\n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+            printf -- "--- a/scripts/get_sources.sh\n+++ b/scripts/get_sources.sh\n@@ -1,1 +1,1 @@\n- \n+ \n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
 
             # --- FIX 2: Standard environment traps ---
             mkdir -p /opt/IronFox/
