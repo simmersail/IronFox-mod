@@ -94,10 +94,9 @@ jobs:
             /bin/bash << 'EOF' | tee build_output.log
             set -e
             
-           - name: Bypass Obsolete Patch
-               run: |
-                diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
-   
+            
+            # Bypass Obsolete Patch (Now a shell command, not YAML)
+            diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch   
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
             echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
