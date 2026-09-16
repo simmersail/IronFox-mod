@@ -95,10 +95,8 @@ jobs:
             set -e
             
            - name: Bypass Obsolete Patch
-             run: |
-               # This generates a valid, empty patch based on the actual current file
-               # It satisfies the file-existence check AND the patch-validation check
-               diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+               run: |
+                diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
    
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
