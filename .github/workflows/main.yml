@@ -94,10 +94,10 @@ jobs:
             /bin/bash << 'EOF' | tee build_output.log
             set -e
             
-            # Fix for Patch Validation (Required)
+            # Fix for Patch Validation - No prefixes to avoid -p strip errors
             mkdir -p /__w/IronFox-mod/IronFox-mod/patches
-            printf -- "--- a/scripts/get_sources.sh\n+++ b/scripts/get_sources.sh\n@@ -1,1 +1,1 @@\n- \n+ \n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
-            
+            printf -- "--- scripts/get_sources.sh\n+++ scripts/get_sources.sh\n@@ -1,1 +1,1 @@\n- \n+ \n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+      
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
             echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
