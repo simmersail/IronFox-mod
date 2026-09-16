@@ -94,11 +94,12 @@ jobs:
             /bin/bash << 'EOF' | tee build_output.log
             set -e
             
-            # Fix for Patch Validation - Create a directory instead of a file
-            # This often tricks simple 'if [ -f ... ]' checks or causes the script to 
-            # skip the patch entirely without triggering a 'FAILED' exit code.
+            # Remove the file if it exists to prevent mkdir collision
+            rm -f /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+
+            # Create the directory bypass
             mkdir -p /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
-      
+   
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
             echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
