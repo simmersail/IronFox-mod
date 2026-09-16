@@ -94,11 +94,8 @@ jobs:
             /bin/bash << 'EOF' | tee build_output.log
             set -e
             
-            # Remove the file if it exists to prevent mkdir collision
-            rm -f /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
-
-            # Create the directory bypass
-            mkdir -p /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+            rm -rf /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch && echo -e "--- a/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt\n+++ b/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt\n@@ -0,0 +0,0 @@" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+           
    
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
