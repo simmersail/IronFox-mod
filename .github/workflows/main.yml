@@ -94,9 +94,9 @@ jobs:
             /bin/bash << 'EOF' | tee build_output.log
             set -e
             
-            # Fix for Patch Validation - No prefixes to avoid -p strip errors
+            # Fix for Patch Validation - Target a file inside the gecko source directory
             mkdir -p /__w/IronFox-mod/IronFox-mod/patches
-            printf -- "--- scripts/get_sources.sh\n+++ scripts/get_sources.sh\n@@ -1,1 +1,1 @@\n- \n+ \n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
+            printf -- "--- .gitattributes\n+++ .gitattributes\n@@ -1,1 +1,1 @@\n- \n+ \n" > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch
       
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
