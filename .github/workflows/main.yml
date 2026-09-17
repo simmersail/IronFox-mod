@@ -95,8 +95,6 @@ jobs:
             set -e
             
             
-            # Bypass Obsolete Patch (Now a shell command, not YAML)
-            diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch   
             # Standard Environment Traps
             mkdir -p /opt/IronFox/
             echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
@@ -123,6 +121,9 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
 
+            # Bypass Obsolete Patch (Now a shell command, not YAML)
+            diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch   
+  
             echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
             chmod +x ./scripts/ci-upload-artifacts-if.sh
             echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
