@@ -121,6 +121,11 @@ jobs:
             rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
             yes | ./scripts/get_sources.sh
 
+            # Try common paths where the version file lives
+            find . -name "version.txt" -exec cat {} + 
+            echo "--- HALTING BUILD ---"
+            exit 1
+    
             # Bypass Obsolete Patch (Now a shell command, not YAML)
             diff -u /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt /__w/IronFox-mod/IronFox-mod/external/gecko/mobile/android/android-components/plugins/config/src/main/java/ConfigPlugin.kt > /__w/IronFox-mod/IronFox-mod/patches/a-c-allow-build-date-override.patch   
   
