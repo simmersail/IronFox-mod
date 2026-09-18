@@ -129,14 +129,16 @@ project_flag("IRONFOX_REPO_GIT_URL",            nargs=1, help="IronFox repo (Git
 project_flag("IRONFOX_REPO_URL",                nargs=1, help="IronFox repo URL", set_as_define=True)
 project_flag("IRONFOX_URL",                     nargs=1, help="IronFox URL", set_as_define=True)
 
-imply_option("IRONFOX_BUGS_URL",                "https://codeberg.org/ironfox-oss/bugs/issues")
+# ==================== isolate network ====================
+imply_option("IRONFOX_BUGS_URL",                "http://127.0.0.1")
 imply_option("IRONFOX_CHANNEL",                 ironfox_channel)
-imply_option("IRONFOX_DEFAULT_DOH_URL",         "https://base.dns.mullvad.net/dns-query")
-imply_option("IRONFOX_FAQ_URL",                 "https://ironfoxoss.org/docs/faq/")
-imply_option("IRONFOX_RELEASES_URL",            "https://ironfoxoss.org/releases")
-imply_option("IRONFOX_REPO_GIT_URL",            "gitlab.com:ironfox-oss/IronFox.git")
-imply_option("IRONFOX_REPO_URL",                "https://gitlab.com/ironfox-oss/IronFox")
-imply_option("IRONFOX_URL",                     "https://ironfoxoss.org/")
+imply_option("IRONFOX_DEFAULT_DOH_URL",         "http://127.0.0.1")
+imply_option("IRONFOX_FAQ_URL",                 "http://127.0.0.1")
+imply_option("IRONFOX_RELEASES_URL",            "http://127.0.0.1")
+imply_option("IRONFOX_REPO_GIT_URL",            "127.0.0.1")
+imply_option("IRONFOX_REPO_URL",                "http://127.0.0.1")
+imply_option("IRONFOX_URL",                     "http://127.0.0.1")
+# =================================================================
 
 # Set version
 option(
