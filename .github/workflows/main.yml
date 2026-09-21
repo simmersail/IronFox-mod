@@ -129,8 +129,7 @@ jobs:
             # --- ЭТАП 2: СБОРКА FENIX ---
             echo 'Starting Fenix build...'
             yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'fenix'
-            EOF
-
+            
       - name: Post-Failure Debugging
         if: failure()
         run: |
