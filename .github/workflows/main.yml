@@ -69,7 +69,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
             registry.gitlab.com/ironfox-oss/ironfox:latest \
-            /bin/bash << 'EOF' | tee build_output.log
+            /bin/bash << 'EOF'
           set -e
           
           # Базовые заглушки окружения
