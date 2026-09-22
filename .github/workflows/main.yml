@@ -35,12 +35,11 @@ jobs:
         
       - name: Build in Container
         run: |
-          # 1. Создаем файл скрипта. Используем обычный EOF, чтобы GitHub подставил значения, 
-          # но переменные окружения Docker передаем через -e.
+          # 1. Создаем файл скрипта.
           cat << 'EOF' > build_script.sh
           set -ex
           
-          # Базовые заглушки окружения
+          # Базовые заглушки окружения (вне рабочей директории git)
           mkdir -p /opt/IronFox/
           echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
           echo "disabled" > /opt/IronFox/ironfox-sb-gapi-key.txt
@@ -64,6 +63,7 @@ jobs:
           chmod +x /opt/ironfox-tools/bin/cbindgen
           export PATH="/opt/ironfox-tools/bin:$PATH"
           
+          # Первичные заглушки для GeckoView
           echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
           chmod +x ./scripts/ci-upload-artifacts-if.sh
           echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
@@ -79,18 +79,23 @@ jobs:
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
 
           echo 'Resetting modified codebase files...'
+          # Полная очистка: удаляем всё, что не в гите, и сбрасываем измененные файлы
           git reset --hard HEAD
-          git clean -fd -e outputs/ -e artifacts/ -e obj/ -e overrides.mozconfig -e scripts/ci-upload-artifacts-if.sh -e scripts/ci-prep.sh
+          git clean -fd -e outputs/ -e artifacts/ -e obj/
           
-          if [ ! -f overrides.mozconfig ]; then
-            echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
-          fi
+          # ПЕРЕСОЗДАНИЕ ВСЕХ ЗАГЛУШЕК ПОСЛЕ RESET
+          echo 'Restoring stubs for Fenix build...'
+          echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
+          chmod +x ./scripts/ci-upload-artifacts-if.sh
+          echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
+          chmod +x ./scripts/ci-prep.sh
+          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
 
           echo 'Starting Fenix build...'
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
           EOF
 
-          # 2. Запускаем Docker. Передаем архитектуру через -e.
+          # 2. Запуск Docker с передачей всех необходимых переменных
           docker run --rm -i \
             -u root \
             -v ${{ github.workspace }}:/__w/IronFox-mod/IronFox-mod \
@@ -121,6 +126,7 @@ jobs:
             -e IRONFOX_RELEASES_S3_SECRET_KEY="dummy_secret" \
             -e IRONFOX_RELEASES_S3_BUCKET_NAME="dummy_bucket" \
             -e IRONFOX_RELEASES_S3_ENDPOINT="dummy_endpoint" \
+            -e IRONFOX_ANDROID_KEYSTORE_URL="dummy" \
             -e IRONFOX_ANDROID_KEYSTORE_KEY_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_STORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
