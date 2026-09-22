@@ -35,6 +35,61 @@ jobs:
         
       - name: Build in Container
         run: |
+          # 1. Записываем все команды в отдельный файл build_script.sh
+          cat << 'EOF' > build_script.sh
+          set -e
+          
+          # Базовые заглушки окружения
+          mkdir -p /opt/IronFox/
+          echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
+          echo "disabled" > /opt/IronFox/ironfox-sb-gapi-key.txt
+          
+          git config --global --add safe.directory '*'
+          chmod +x scripts/*.sh
+          
+          # Настройка Rust
+          export HOME=/root
+          if [ ! -f /root/.cargo/bin/cargo ]; then
+            curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y
+          fi
+          export PATH="/root/.cargo/bin:$PATH"
+          
+          if [ ! -f /root/.cargo/bin/cbindgen ]; then
+            cargo install cbindgen
+          fi
+          
+          mkdir -p /opt/ironfox-tools/bin
+          cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
+          chmod +x /opt/ironfox-tools/bin/cbindgen
+          export PATH="/opt/ironfox-tools/bin:$PATH"
+          
+          echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
+          chmod +x ./scripts/ci-upload-artifacts-if.sh
+          echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
+          chmod +x ./scripts/ci-prep.sh
+
+          echo 'Preparing sources and build environment...'
+          rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
+          yes | ./scripts/get_sources.sh
+          
+          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
+          
+          echo 'Starting GeckoView build...'
+          yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'geckoview'
+
+          echo 'Resetting modified codebase files...'
+          git reset --hard HEAD
+          git clean -fd -e outputs/ -e artifacts/ -e obj/ -e overrides.mozconfig -e scripts/ci-upload-artifacts-if.sh -e scripts/ci-prep.sh
+          
+          if [ ! -f overrides.mozconfig ]; then
+            echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
+          fi
+
+          echo 'Starting Fenix build...'
+          yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'fenix'
+          EOF
+
+          # 2. Запускаем Docker, монтируем этот файл и выполняем его
           docker run --rm -i \
             -u root \
             -v ${{ github.workspace }}:/__w/IronFox-mod/IronFox-mod \
@@ -69,65 +124,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
             registry.gitlab.com/ironfox-oss/ironfox:latest \
-            /bin/bash << 'EOF'
-          set -e
-          
-          # Базовые заглушки окружения
-          mkdir -p /opt/IronFox/
-          echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
-          echo "disabled" > /opt/IronFox/ironfox-sb-gapi-key.txt
-          
-          git config --global --add safe.directory '*'
-          chmod +x scripts/*.sh
-          
-          # Настройка Rust
-          export HOME=/root
-          if [ ! -f /root/.cargo/bin/cargo ]; then
-            curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y
-          fi
-          export PATH="/root/.cargo/bin:$PATH"
-          
-          if [ ! -f /root/.cargo/bin/cbindgen ]; then
-            cargo install cbindgen
-          fi
-          
-          mkdir -p /opt/ironfox-tools/bin
-          cp /root/.cargo/bin/cbindgen /opt/ironfox-tools/bin/cbindgen
-          chmod +x /opt/ironfox-tools/bin/cbindgen
-          export PATH="/opt/ironfox-tools/bin:$PATH"
-          
-          # Подменяем скрипты отправки в хранилища S3 автора на No-Op заглушки
-          echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
-          chmod +x ./scripts/ci-upload-artifacts-if.sh
-          echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
-          chmod +x ./scripts/ci-prep.sh
-
-          # --- ЭТАП 1: СБОРКА GECKOVIEW ---
-          echo 'Preparing sources and build environment...'
-          rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
-          yes | ./scripts/get_sources.sh
-          
-          # Создаем файл оверрайда, который гарантированно отключит Safe Browsing в конце чтения mozconfig
-          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
-          
-          echo 'Starting GeckoView build...'
-          yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'geckoview'
-
-          # --- ЭТАП ТОЧЕЧНОЙ ИЗОЛЯЦИИ МЕЖДУ СБОРКАМИ ---
-          echo 'Resetting modified codebase files but preserving compiled artifacts...'
-          git reset --hard HEAD
-          git clean -fd -e outputs/ -e artifacts/ -e obj/ -e overrides.mozconfig -e scripts/ci-upload-artifacts-if.sh -e scripts/ci-prep.sh
-          
-          # Страховочная проверка наличия оверрайда на случай глубокой очистки
-          if [ ! -f overrides.mozconfig ]; then
-            echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
-          fi
-
-          # --- ЭТАП 2: СБОРКА FENIX ---
-          echo 'Starting Fenix build...'
-          yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'fenix'
-          EOF
-
+            /bin/bash /__w/IronFox-mod/IronFox-mod/build_script.sh | tee build_output.log
             
       - name: Post-Failure Debugging
         if: failure()
