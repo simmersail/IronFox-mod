@@ -35,9 +35,10 @@ jobs:
         
       - name: Build in Container
         run: |
-          # 1. Записываем все команды в отдельный файл build_script.sh
+          # 1. Создаем файл скрипта. Используем обычный EOF, чтобы GitHub подставил значения, 
+          # но переменные окружения Docker передаем через -e.
           cat << 'EOF' > build_script.sh
-          set -e
+          set -ex
           
           # Базовые заглушки окружения
           mkdir -p /opt/IronFox/
@@ -50,7 +51,7 @@ jobs:
           # Настройка Rust
           export HOME=/root
           if [ ! -f /root/.cargo/bin/cargo ]; then
-            curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           fi
           export PATH="/root/.cargo/bin:$PATH"
           
@@ -68,14 +69,14 @@ jobs:
           echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
           chmod +x ./scripts/ci-prep.sh
 
-          echo 'Preparing sources and build environment...'
+          echo "Preparing sources for architecture: $BUILD_ARCH"
           rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
           yes | ./scripts/get_sources.sh
           
           echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
           
           echo 'Starting GeckoView build...'
-          yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'geckoview'
+          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
 
           echo 'Resetting modified codebase files...'
           git reset --hard HEAD
@@ -86,14 +87,15 @@ jobs:
           fi
 
           echo 'Starting Fenix build...'
-          yes | ./scripts/ci-build.sh "${{ github.event.inputs.arch }}" 'fenix'
+          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
           EOF
 
-          # 2. Запускаем Docker, монтируем этот файл и выполняем его
+          # 2. Запускаем Docker. Передаем архитектуру через -e.
           docker run --rm -i \
             -u root \
             -v ${{ github.workspace }}:/__w/IronFox-mod/IronFox-mod \
             -w /__w/IronFox-mod/IronFox-mod \
+            -e BUILD_ARCH="${{ github.event.inputs.arch }}" \
             -e IRONFOX_CI="1" \
             -e CI_PIPELINE_ID="github_action_build" \
             -e MOZ_BUILD_CONCURRENCY=1 \
@@ -124,7 +126,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
             registry.gitlab.com/ironfox-oss/ironfox:latest \
-            /bin/bash /__w/IronFox-mod/IronFox-mod/build_script.sh | tee build_output.log
+            /bin/bash /__w/IronFox-mod/IronFox-mod/build_script.sh
             
       - name: Post-Failure Debugging
         if: failure()
