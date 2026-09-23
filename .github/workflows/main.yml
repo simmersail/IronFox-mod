@@ -81,7 +81,12 @@ jobs:
           echo 'Resetting modified codebase files...'
           # Полная очистка: удаляем всё, что не в гите, и сбрасываем измененные файлы
           git reset --hard HEAD
-          git clean -fd -e outputs/ -e artifacts/ -e obj/
+          git clean -fd -e outputs/ -e artifacts/ -e "**/obj/" -e "**/build/" -e overrides.mozconfig
+          
+          # Очищаем исходники движка, чтобы не плыли патчи дат (наш улучшенный reset)
+          if [[ -e "external/gecko/.git" ]]; then
+            pushd external/gecko && git reset --hard HEAD && git clean -fd && popd
+          fi
           
           # ПЕРЕСОЗДАНИЕ ВСЕХ ЗАГЛУШЕК ПОСЛЕ RESET
           echo 'Restoring stubs for Fenix build...'
@@ -89,6 +94,23 @@ jobs:
           chmod +x ./scripts/ci-upload-artifacts-if.sh
           echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
           chmod +x ./scripts/ci-prep.sh
+          # 4. 🎯 ЗАГЛУШКА-ПЕРЕХВАТЧИК ДЛЯ СКАЧИВАНИЯ ИЗ S3 (ПЕРЕПИСАНА ЧЕРЕЗ ECHO)
+          # Переписываем логику в один файл построчно, чтобы не конфликтовать с внешним cat
+          echo '#!/bin/bash' > ./scripts/ci-download-artifacts.sh
+          echo 'echo "--- LOCAL ARTIFACT INTERCEPTOR ---"' >> ./scripts/ci-download-artifacts.sh
+          echo 'echo "Intercepted download request for project: \$1, arch: \$2"' >> ./scripts/ci-download-artifacts.sh
+          echo 'if [ -f "./outputs/aar/geckoview-arm64-v8a.zip" ]; then' >> ./scripts/ci-download-artifacts.sh
+          echo '  echo "SUCCESS: Found locally compiled GeckoView zip archive."' >> ./scripts/ci-download-artifacts.sh
+          echo '  echo "Bypassing remote S3 download. Tree state is ready for Gradle."' >> ./scripts/ci-download-artifacts.sh
+          echo '  exit 0' >> ./scripts/ci-download-artifacts.sh
+          echo 'else' >> ./scripts/ci-download-artifacts.sh
+          echo '  echo "WARNING: Local geckoview-arm64-v8a.zip not found!"' >> ./scripts/ci-download-artifacts.sh
+          echo '  mkdir -p ./outputs/aar/' >> ./scripts/ci-download-artifacts.sh
+          echo '  exit 0' >> ./scripts/ci-download-artifacts.sh
+          echo 'fi' >> ./scripts/ci-download-artifacts.sh
+            
+          chmod +x ./scripts/ci-download-artifacts.sh
+            
           echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
 
           echo 'Starting Fenix build...'
