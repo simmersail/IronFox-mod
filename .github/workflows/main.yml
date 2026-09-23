@@ -81,8 +81,8 @@ jobs:
           echo 'Resetting modified codebase files...'
           # Полная очистка: удаляем всё, что не в гите, и сбрасываем измененные файлы
           git reset --hard HEAD
-          git clean -fd -e outputs/ -e artifacts/ -e "**/obj/" -e "**/build/" -e overrides.mozconfig
-          
+          git clean -fd -e outputs/ -e artifacts/ -e build/ -e obj/ -e "**/build/" -e "**/obj/" -e overrides.mozconfig
+
           # 2. ЖЕСТКО СНОСИМ папку движка, так как yes | пропускает её из-за бага ввода!
           if [ -d "external/gecko" ]; then
             echo "CRITICAL OVR: Wiping external/gecko folder to force fresh download for Fenix..."
