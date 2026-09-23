@@ -83,9 +83,10 @@ jobs:
           git reset --hard HEAD
           git clean -fd -e outputs/ -e artifacts/ -e "**/obj/" -e "**/build/" -e overrides.mozconfig
           
-          # Очищаем исходники движка, чтобы не плыли патчи дат (наш улучшенный reset)
-          if [[ -e "external/gecko/.git" ]]; then
-            pushd external/gecko && git reset --hard HEAD && git clean -fd && popd
+          # 2. ЖЕСТКО СНОСИМ папку движка, так как yes | пропускает её из-за бага ввода!
+          if [ -d "external/gecko" ]; then
+            echo "CRITICAL OVR: Wiping external/gecko folder to force fresh download for Fenix..."
+            rm -rf external/gecko
           fi
           
           # ПЕРЕСОЗДАНИЕ ВСЕХ ЗАГЛУШЕК ПОСЛЕ RESET
