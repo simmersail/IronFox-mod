@@ -76,7 +76,12 @@ jobs:
           echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
           
           echo 'Starting GeckoView build...'
-          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
+           # --- ЭТАП 1: ИМИТАЦИЯ СБОРКИ GECKOVIEW (ВМЕСТО КОМПИЛЯЦИИ) ---
+          echo "Bypassing heavy GeckoView compilation for rapid Fenix debugging..."
+          mkdir -p ./outputs/aar/
+          mkdir -p ./obj/
+          echo "mock-geckoview-aar-content" > ./outputs/aar/geckoview-arm64-v8a.zip
+          echo "MOCK: Created fake geckoview-arm64-v8a.zip"
 
           echo 'Resetting modified codebase files...'
           # Полная очистка: удаляем всё, что не в гите, и сбрасываем измененные файлы
