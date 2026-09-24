@@ -84,8 +84,6 @@ jobs:
           git clean -fd -e outputs/ -e artifacts/ -e build/ -e obj/ -e "**/build/" -e "**/obj/" -e overrides.mozconfig
 
           # ХИТРЫЙ ТРЮК: Запрещаем скрипту get_sources-if.sh трогать Python на втором этапе!
-          # Мы меняем строчку "IRONFOX_GET_SOURCE_PYTHON=1" на "0" внутри блока target == 'all'
-          sed -i '/"== '\''all\303\224"/,/^fi/s/IRONFOX_GET_SOURCE_PYTHON=1/IRONFOX_GET_SOURCE_PYTHON=0/' ./scripts/get_sources-if.sh
           # На случай если сложный sed не попал, делаем лобовую замену флага по всему файлу:
           sed -i 's/IRONFOX_GET_SOURCE_PYTHON=1/IRONFOX_GET_SOURCE_PYTHON=0/g' ./scripts/get_sources-if.sh
           
