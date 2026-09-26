@@ -103,18 +103,15 @@ jobs:
           fi
 
           
-          # 🎯 2. ЧЕСТНАЯ УНИВЕРСАЛЬНАЯ ПОВТОРНАЯ НАСТРОЙКА PYTHON И UV
-          # Разворачиваем окружение сами прямо сейчас, чтобы пройти проверку get_androguard
+          # 🎯 2. ЧЕСТНАЯ ПОВТОРНАЯ НАСТРОЙКА PYTHON СРЕДСТВАМИ СИСТЕМЫ
+          # Создаем базовую структуру pyenv через системный python3, 
+          # чтобы get_androguard и get_pip автора сразу увидели валидную папку.
           echo "Re-initializing Python environment for Fenix step..."
           mkdir -p build/
+          python3 -m venv build/pyenv
           
-          # Используем встроенный в докер-образ автора uv, чтобы воссоздать чистый pyenv
-          uv venv build/pyenv
-          source build/pyenv/bin/activate
-          uv pip install --upgrade pip
-          deactivate
-          echo "SUCCESS: Python environment re-initialized and synchronized with disk."
-          
+          echo "SUCCESS: Python environment re-initialized and synced with disk."
+       
           # ПЕРЕСОЗДАНИЕ ВСЕХ ЗАГЛУШЕК ПОСЛЕ RESET
           echo 'Restoring stubs for Fenix build...'
           echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
