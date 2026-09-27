@@ -137,6 +137,31 @@ jobs:
             
           echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
 
+          # 🔐 ГЕНЕРАЦИЯ СОБСТВЕННОГО КЛЮЧА ДЛЯ ПОДПИСИ APK
+          echo "Generating temporary CI Keystore for APK signing..."
+          
+          # Создаем директорию (если её нет) и даем права на запись
+          sudo mkdir -p /opt/IronFox/ 2>/dev/null || mkdir -p /opt/IronFox/
+          sudo chmod 777 /opt/IronFox/ 2>/dev/null || true
+
+          # 1. Записываем тестовый пароль в нужный файл
+          echo "my_ci_password_123" > /opt/IronFox/ironfox-android-keystore-pass.txt
+          
+          # 2. Генерируем сам файл хранилища ключей .jks с этим паролем
+          # Используем дефолтные пути, которые жестко зашиты в скриптах автора
+          keytool -genkey -v \
+            -keystore /opt/IronFox/ironfox-android-keystore.jks \
+            -alias ironfox-android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass my_ci_password_123 \
+            -keypass my_ci_password_123 \
+            -dname "CN=IronFoxCI, OU=Dev, O=IronFox, L=Local, S=State, C=US"
+
+          echo "SUCCESS: Keystore and password file generated at /opt/IronFox
+          /"
+
           echo 'Starting Fenix build...'
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
           EOF
@@ -191,10 +216,11 @@ jobs:
       - name: Fix Permissions for Artifact Upload
         run: sudo chown -R runner:docker ${{ github.workspace }}
         
-      - name: Upload APK
-        if: always()
+      - name: Upload All IronFox Build Outputs
         uses: actions/upload-artifact@v4
         with:
-         name: IronFox-${{ github.event.inputs.arch }}
-         path: outputs/aar/*.apk
+          name: ironfox-build-outputs
+          # Указываем корень папки артефактов — экшен заберет всю структуру
+          path: outputs/
+
          
