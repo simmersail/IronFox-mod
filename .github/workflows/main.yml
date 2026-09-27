@@ -140,27 +140,27 @@ jobs:
           # 🔐 ГЕНЕРАЦИЯ СОБСТВЕННОГО КЛЮЧА ДЛЯ ПОДПИСИ APK
           echo "Generating temporary CI Keystore for APK signing..."
           
+          # Создаем директорию для ключей
           sudo mkdir -p /opt/IronFox/ 2>/dev/null || mkdir -p /opt/IronFox/
           sudo chmod 777 /opt/IronFox/ 2>/dev/null || true
 
+          # Записываем тестовый пароль в файл
           echo "my_ci_password_123" > /opt/IronFox/ironfox-android-keystore-pass.txt
           
-          # 🔍 Ищем keytool в системных папках Java, если обычный недоступен
-          KEYTOOL_BIN="keytool"
-          if ! command -v keytool &> /dev/null; then
-            echo "Standard keytool not found, looking for Embedded JDK..."
-            # Пытаемся найти keytool внутри установленных JDK в контейнере
-            EMBEDDED_KEYTOOL=$(find /usr/lib/jvm /opt/android* /__w/IronFox-mod -name keytool -print -quit 2>/dev/null)
-            if [ -n "$EMBEDDED_KEYTOOL" ]; then
-              KEYTOOL_BIN="$EMBEDDED_KEYTOOL"
-              echo "Found embedded keytool at: $KEYTOOL_BIN"
-            else
-              echo "WARNING: Embedded keytool not found. Creating a fake keystore fallback..."
-            fi
+          # Используем точный путь к найденному встроенному keytool
+          EMBEDDED_KEYTOOL="/__w/IronFox-mod/IronFox-mod/external/jdk-21/bin/keytool"
+
+          # Проверяем, что утилита физически существует по этому пути
+          if [ ! -f "$EMBEDDED_KEYTOOL" ]; then
+            echo "ERROR: Embedded keytool not found at $EMBEDDED_KEYTOOL! Stopping build."
+            exit 1
           fi
 
-          # Генерируем ключ найденным бинарником
-          $KEYTOOL_BIN -genkey -v \
+          # Разрешаем запуск утилиты на исполнение
+          chmod +x "$EMBEDDED_KEYTOOL"
+
+          # Генерируем сам файл хранилища ключей .jks
+          "$EMBEDDED_KEYTOOL" -genkey -v \
             -keystore /opt/IronFox/ironfox-android-keystore.jks \
             -alias ironfox-android \
             -keyalg RSA \
@@ -168,9 +168,15 @@ jobs:
             -validity 10000 \
             -storepass my_ci_password_123 \
             -keypass my_ci_password_123 \
-            -dname "CN=IronFoxCI, OU=Dev, O=IronFox, L=Local, S=State, C=US" || true
+            -dname "CN=IronFoxCI, OU=Dev, O=IronFox, L=Local, S=State, C=US"
 
-          echo "SUCCESS: Keystore setup complete."
+          # Финальная проверка создания файла ключа
+          if [ ! -f "/opt/IronFox/ironfox-android-keystore.jks" ]; then
+            echo "ERROR: Keystore file was not created at /opt/IronFox/! Stopping build."
+            exit 1
+          fi
+
+          echo "SUCCESS: Keystore generated and verified using embedded JDK!"
           
           echo 'Starting Fenix build...'
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
