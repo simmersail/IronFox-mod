@@ -140,15 +140,21 @@ jobs:
           # 🔐 ГЕНЕРАЦИЯ СОБСТВЕННОГО КЛЮЧА ДЛЯ ПОДПИСИ APK
           echo "Generating temporary CI Keystore for APK signing..."
           
-          # Создаем директорию (если её нет) и даем права на запись
+          # Проверяем наличие утилиты. Если её нет — жесткий стоп.
+          if ! command -v keytool &> /dev/null; then
+            echo "ERROR: 'keytool' is missing! Cannot guarantee APK signing. Stopping build."
+            exit 127
+          fi
+          
+          # Создаем директорию
           sudo mkdir -p /opt/IronFox/ 2>/dev/null || mkdir -p /opt/IronFox/
           sudo chmod 777 /opt/IronFox/ 2>/dev/null || true
 
-          # 1. Записываем тестовый пароль в нужный файл
+          # Записываем тестовый пароль
           echo "my_ci_password_123" > /opt/IronFox/ironfox-android-keystore-pass.txt
           
-          # 2. Генерируем сам файл хранилища ключей .jks с этим паролем
-          # Используем дефолтные пути, которые жестко зашиты в скриптах автора
+          # Генерируем сам файл хранилища ключей .jks
+          # Любой сбой на этой команде вызовет немедленное падение скрипта
           keytool -genkey -v \
             -keystore /opt/IronFox/ironfox-android-keystore.jks \
             -alias ironfox-android \
@@ -159,9 +165,14 @@ jobs:
             -keypass my_ci_password_123 \
             -dname "CN=IronFoxCI, OU=Dev, O=IronFox, L=Local, S=State, C=US"
 
-          echo "SUCCESS: Keystore and password file generated at /opt/IronFox
-          /"
+          # Проверяем физическое наличие сгенерированного ключа на диске
+          if [ ! -f "/opt/IronFox/ironfox-android-keystore.jks" ]; then
+            echo "ERROR: Keystore file was not created at /opt/IronFox/! Stopping build."
+            exit 1
+          fi
 
+          echo "SUCCESS: Keystore and password file successfully generated and verified."
+          
           echo 'Starting Fenix build...'
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
           EOF
