@@ -174,8 +174,8 @@ jobs:
             -dname "CN=IronFoxCI, OU=Dev, O=IronFox, L=Local, S=State, C=US"
             
           # Жестко перезаписываем файл в /opt/
-          sudo cp -f "$LOCAL_JKS" /opt/IronFox/ironfox-android-keystore.jks
-          echo "SUCCESS: Valid keystore created and injected!"
+          # sudo cp -f "$LOCAL_JKS" /opt/IronFox/ironfox-android-keystore.jks
+          # echo "SUCCESS: Valid keystore created and injected!"
           
           # Финальная проверка создания файла ключа
           if [ ! -f "/opt/IronFox/ironfox-android-keystore.jks" ]; then
