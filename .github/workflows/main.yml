@@ -165,7 +165,7 @@ jobs:
           # Генерируем сам файл хранилища ключей .jks
           "$EMBEDDED_KEYTOOL" -genkey -v \
             -keystore /opt/IronFox/ironfox-android-keystore.jks \
-            -alias ironfox-android \
+            -alias ironfox \
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
