@@ -149,6 +149,9 @@ jobs:
 
           # Записываем тестовый пароль в файл
           echo "my_ci_password_123" > /opt/IronFox/ironfox-android-keystore-pass.txt
+          # 2. ДОБАВЛЯЕМ: Пароль от конкретного ключа внутри (Key Pass)
+          echo "my_ci_password_123" > /opt/IronFox/ironfox-android-signing-key-pass.txt
+          
           
           # Используем точный путь к найденному встроенному keytool
           EMBEDDED_KEYTOOL="/__w/IronFox-mod/IronFox-mod/external/jdk-21/bin/keytool"
