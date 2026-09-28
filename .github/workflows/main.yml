@@ -139,7 +139,10 @@ jobs:
 
           # 🔐 ГЕНЕРАЦИЯ СОБСТВЕННОГО КЛЮЧА ДЛЯ ПОДПИСИ APK
           echo "Generating temporary CI Keystore for APK signing..."
-          
+
+          # 🔥 ВОТ ЭТА СТРОКА ВСЁ ИСПРАВИТ: Сносим старую текстовую заглушку автора!
+          sudo rm -f /opt/IronFox/ironfox-android-keystore.jks 2>/dev/null || rm -f /opt/IronFox/ironfox-android-keystore.jks
+
           # Создаем директорию для ключей
           sudo mkdir -p /opt/IronFox/ 2>/dev/null || mkdir -p /opt/IronFox/
           sudo chmod 777 /opt/IronFox/ 2>/dev/null || true
@@ -169,7 +172,11 @@ jobs:
             -storepass my_ci_password_123 \
             -keypass my_ci_password_123 \
             -dname "CN=IronFoxCI, OU=Dev, O=IronFox, L=Local, S=State, C=US"
-
+            
+          # Жестко перезаписываем файл в /opt/
+          sudo cp -f "$LOCAL_JKS" /opt/IronFox/ironfox-android-keystore.jks
+          echo "SUCCESS: Valid keystore created and injected!"
+          
           # Финальная проверка создания файла ключа
           if [ ! -f "/opt/IronFox/ironfox-android-keystore.jks" ]; then
             echo "ERROR: Keystore file was not created at /opt/IronFox/! Stopping build."
