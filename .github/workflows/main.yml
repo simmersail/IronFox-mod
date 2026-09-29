@@ -23,6 +23,11 @@ jobs:
       - name: Host Cleanup and Swap
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android-sdk /opt/ghc "/usr/local/share/boost" "$RUNNER_TOOL_CACHE"
+          # СТЕРИЛИЗАЦИЯ РАННЕРА: сносим всё в рабочей папке, включая скрытый кэш Mozilla .*
+          # Это гарантирует честный билд C++ движка с нуля без старых хвостов в external/gecko/obj/
+          sudo rm -rf "${{ github.workspace }}/*" 2>/dev/null || true
+          sudo rm -rf "${{ github.workspace }}/.*" 2>/dev/null || true
+          
           sudo swapoff /swapfile || true
           sudo fallocate -l 16G /swapfile || true
           sudo chmod 600 /swapfile || true
@@ -38,6 +43,13 @@ jobs:
           # 1. Создаем файл скрипта.
           cat << 'EOF' > build_script.sh
           set -ex
+
+          # ГЛОБАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ НА ОФИЦИАЛЬНЫЙ СТАБИЛЬНЫЙ РЕЛИЗ 154.0.1
+          echo "Forcing global build mode to Official Release 154.0.1..."
+          export MOZ_ANDROID_BUILD_RELEASE=1
+          export MOZILLA_OFFICIAL=1
+          export IRONFOX_BUILD_TYPE="release"
+          export IRONFOX_VERSION="154.0.1"
           
           # Базовые заглушки окружения (вне рабочей директории git)
           mkdir -p /opt/IronFox/
@@ -76,13 +88,8 @@ jobs:
           echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
           
           echo 'Starting GeckoView build...'
-           # --- ЭТАП 1: ИМИТАЦИЯ СБОРКИ GECKOVIEW (ВМЕСТО КОМПИЛЯЦИИ) ---
-          echo "Bypassing heavy GeckoView compilation for rapid Fenix debugging..."
-          mkdir -p ./outputs/aar/
-          mkdir -p ./obj/
-          echo "mock-geckoview-aar-content" > ./outputs/aar/geckoview-arm64-v8a.zip
-          echo "MOCK: Created fake geckoview-arm64-v8a.zip"
-
+          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
+          
           echo 'Resetting modified codebase files...'
           # Полная очистка: удаляем всё, что не в гите, и сбрасываем измененные файлы
           git reset --hard HEAD
@@ -187,9 +194,31 @@ jobs:
           fi
 
           echo "SUCCESS: Keystore generated and verified using embedded JDK!"
+
+          # =====================================================================
+          # 🔗 ПОДГОТОВКА СЛИЯНИЯ: РАСПАКОВКА ДВИЖКА В MAVEN ДЛЯ FENIX
+          # =====================================================================
+          echo "Populating local Maven repository using compiled Step 1 archive..."
           
-          echo 'Starting Fenix build...'
-          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
+          # Определяем точное имя архива, который создал Шаг 1
+          if [ "$BUILD_ARCH" == "bundle" ]; then
+            REAL_ZIP="./outputs/aar/geckoview-arm64-v8a.zip"
+          else
+            local_suffix=$(echo "$BUILD_ARCH" | sed 's/arm64/arm64-v8a/;s/arm/armeabi-v7a/')
+            REAL_ZIP="./outputs/aar/geckoview-${local_suffix}.zip"
+          fi
+
+          # Распаковываем его руками в папку maven/, создавая локальный репозиторий
+          mkdir -p ./outputs/aar/maven/
+          if [ "$BUILD_ARCH" != "bundle" ]; then
+            unzip -o "$REAL_ZIP" -d "./outputs/aar/maven/"
+            echo "SUCCESS: Local Maven repository populated with custom GeckoView!"
+          fi
+
+          # ======================================
+          
+          # Запускаем в режиме rebuild-fenix, чтобы скрипт взял наш готовый Maven-архив движка
+          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'rebuild-fenix'
           EOF
 
           # 2. Запуск Docker с передачей всех необходимых переменных
@@ -228,7 +257,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_STORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
-            registry.gitlab.com/ironfox-oss/ironfox:latest \
+            registry.gitlab.com/ironfox-oss/ironfox:v154-0-1 \
             /bin/bash /__w/IronFox-mod/IronFox-mod/build_script.sh
             
       - name: Post-Failure Debugging
