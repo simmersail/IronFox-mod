@@ -239,7 +239,15 @@ jobs:
           fi
 
           # Запускаем в режиме rebuild-fenix, чтобы скрипт взял наш готовый Maven-архив движка
-          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'rebuild-fenix'
+          # =====================================================================
+          # 🎯 ЭТАП 2: БЕЗОПАСНАЯ ИНЪЕКЦИЯ REBUILD-FENIX В ФИНАЛЬНЫЙ ШАГ
+          # =====================================================================
+          echo 'Injecting rebuild-fenix strictly into the final build.sh call...'
+          
+          # Находим уникальную строку вызова build.sh и меняем в ней переменную проекта на "rebuild-fenix"
+          sed -i 's|/build.sh" "${IRONFOX_CI_BUILD_ARCH}" "${IRONFOX_CI_BUILD_PROJECT}"|/build.sh" "${IRONFOX_CI_BUILD_ARCH}" "rebuild-fenix"|g' ./scripts/ci-build.sh
+          
+          yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
           EOF
 
           # 2. Запуск Docker с передачей всех необходимых переменных
