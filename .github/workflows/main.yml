@@ -25,8 +25,8 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android-sdk /opt/ghc "/usr/local/share/boost" "$RUNNER_TOOL_CACHE"
           # СТЕРИЛИЗАЦИЯ РАННЕРА: сносим всё в рабочей папке, включая скрытый кэш Mozilla .*
           # Это гарантирует честный билд C++ движка с нуля без старых хвостов в external/gecko/obj/
-          sudo rm -rf "${{ github.workspace }}/*" 2>/dev/null || true
-          sudo rm -rf "${{ github.workspace }}/.*" 2>/dev/null || true
+          #sudo rm -rf "${{ github.workspace }}/*" 2>/dev/null || true
+          #sudo rm -rf "${{ github.workspace }}/.*" 2>/dev/null || true
           
           sudo swapoff /swapfile || true
           sudo fallocate -l 16G /swapfile || true
@@ -94,10 +94,9 @@ jobs:
           chmod +x ./scripts/ci-upload-artifacts-if.sh
           echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
           chmod +x ./scripts/ci-prep.sh
-          if [ -d "external/gecko" ]; then
-            echo "Wiping out old unpacked external/gecko folder to guarantee clean patching..."
-            sudo rm -rf external/gecko 2>/dev/null || rm -rf external/gecko
-          fi
+          
+          rm -rf external/gecko
+          
           echo "Preparing sources for architecture: $BUILD_ARCH"
           rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
           yes | ./scripts/get_sources.sh
@@ -121,11 +120,9 @@ jobs:
           git clean -fd -e outputs/ -e artifacts/ -e overrides.mozconfig
 
           # 2. ЖЕСТКО СНОСИМ папку движка, так как yes | пропускает её из-за бага ввода!
-          if [ -d "external/gecko" ]; then
-            echo "CRITICAL OVR: Wiping external/gecko folder to force fresh download for Fenix..."
-            rm -rf external/gecko
-          fi
-
+          echo "CRITICAL OVR: Wiping external/ folder to force fresh download for Fenix..."
+          rm -rf external/
+          
           
           # 🎯 2. ЧЕСТНАЯ ПОВТОРНАЯ НАСТРОЙКА PYTHON СРЕДСТВАМИ СИСТЕМЫ
           # Создаем базовую структуру pyenv через системный python3, 
@@ -160,6 +157,11 @@ jobs:
           chmod +x ./scripts/ci-download-artifacts.sh
             
           echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
+
+          # 🎯 ПОВТОРНОЕ РАЗВЕРТЫВАНИЕ ЧИСТЫХ ИНСТРУМЕНТОВ И ИСХОДНИКОВ ИЗ КЭША
+          echo "Re-deploying clean sources and JDK tools for Fenix..."
+          yes | ./scripts/get_sources.sh
+       
 
           # 🔐 ГЕНЕРАЦИЯ СОБСТВЕННОГО КЛЮЧА ДЛЯ ПОДПИСИ APK
           echo "Generating temporary CI Keystore for APK signing..."
