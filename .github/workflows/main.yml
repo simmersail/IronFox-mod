@@ -198,25 +198,29 @@ jobs:
           # =====================================================================
           # 🔗 ПОДГОТОВКА СЛИЯНИЯ: РАСПАКОВКА ДВИЖКА В MAVEN ДЛЯ FENIX
           # =====================================================================
-          echo "Populating local Maven repository using compiled Step 1 archive..."
+          echo "Preparing local Maven repository..."
           
-          # Определяем точное имя архива, который создал Шаг 1
-          if [ "$BUILD_ARCH" == "bundle" ]; then
-            REAL_ZIP="./outputs/aar/geckoview-arm64-v8a.zip"
-          else
-            local_suffix=$(echo "$BUILD_ARCH" | sed 's/arm64/arm64-v8a/;s/arm/armeabi-v7a/')
-            REAL_ZIP="./outputs/aar/geckoview-${local_suffix}.zip"
-          fi
-
-          # Распаковываем его руками в папку maven/, создавая локальный репозиторий
-          mkdir -p ./outputs/aar/maven/
+          # Ручная распаковка нужна СТРОГО для одиночных архитектур,
+          # так как для bundle скрипты автора делают Fat AAR нативно через mach!
           if [ "$BUILD_ARCH" != "bundle" ]; then
+            
+            # Определяем точное имя файла в зависимости от одиночной архитектуры
+            if [ "$BUILD_ARCH" == "arm64" ]; then
+              REAL_ZIP="./outputs/aar/geckoview-arm64-v8a.zip"
+            elif [ "$BUILD_ARCH" == "arm" ]; then
+              REAL_ZIP="./outputs/aar/geckoview-armeabi-v7a.zip"
+            else
+              REAL_ZIP="./outputs/aar/geckoview-${BUILD_ARCH}.zip"
+            fi
+
+            echo "Target archive identified as: $REAL_ZIP"
+            mkdir -p ./outputs/aar/maven/
             unzip -o "$REAL_ZIP" -d "./outputs/aar/maven/"
             echo "SUCCESS: Local Maven repository populated with custom GeckoView!"
+          else
+            echo "Mode is BUNDLE. Bypassing manual unzip, letting author's mach handle Fat AAR compilation."
           fi
 
-          # ======================================
-          
           # Запускаем в режиме rebuild-fenix, чтобы скрипт взял наш готовый Maven-архив движка
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'rebuild-fenix'
           EOF
