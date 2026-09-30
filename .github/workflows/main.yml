@@ -80,7 +80,10 @@ jobs:
           chmod +x ./scripts/ci-upload-artifacts-if.sh
           echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
           chmod +x ./scripts/ci-prep.sh
-
+          if [ -d "external/gecko" ]; then
+            echo "Wiping out old unpacked external/gecko folder to guarantee clean patching..."
+            sudo rm -rf external/gecko 2>/dev/null || rm -rf external/gecko
+          fi
           echo "Preparing sources for architecture: $BUILD_ARCH"
           rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
           yes | ./scripts/get_sources.sh
