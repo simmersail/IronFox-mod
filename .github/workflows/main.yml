@@ -119,50 +119,6 @@ jobs:
           # 3. Чистим остальной мелкий untracked мусор, сохраняя нашOutputs/ с фейковым архивом
           git clean -fd -e outputs/ -e artifacts/ -e overrides.mozconfig
 
-          # 2. ЖЕСТКО СНОСИМ папку движка, так как yes | пропускает её из-за бага ввода!
-          echo "CRITICAL OVR: Wiping external/ folder to force fresh download for Fenix..."
-          rm -rf external/
-          
-          
-          # 🎯 2. ЧЕСТНАЯ ПОВТОРНАЯ НАСТРОЙКА PYTHON СРЕДСТВАМИ СИСТЕМЫ
-          # Создаем базовую структуру pyenv через системный python3, 
-          # чтобы get_androguard и get_pip автора сразу увидели валидную папку.
-          echo "Re-initializing Python environment for Fenix step..."
-          mkdir -p build/
-          python3 -m venv build/pyenv
-          
-          echo "SUCCESS: Python environment re-initialized and synced with disk."
-       
-          # ПЕРЕСОЗДАНИЕ ВСЕХ ЗАГЛУШЕК ПОСЛЕ RESET
-          echo 'Restoring stubs for Fenix build...'
-          echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
-          chmod +x ./scripts/ci-upload-artifacts-if.sh
-          echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
-          chmod +x ./scripts/ci-prep.sh
-          # 4. 🎯 ЗАГЛУШКА-ПЕРЕХВАТЧИК ДЛЯ СКАЧИВАНИЯ ИЗ S3 (ПЕРЕПИСАНА ЧЕРЕЗ ECHO)
-          # Переписываем логику в один файл построчно, чтобы не конфликтовать с внешним cat
-          echo '#!/bin/bash' > ./scripts/ci-download-artifacts.sh
-          echo 'echo "--- LOCAL ARTIFACT INTERCEPTOR ---"' >> ./scripts/ci-download-artifacts.sh
-          echo 'echo "Intercepted download request for project: \$1, arch: \$2"' >> ./scripts/ci-download-artifacts.sh
-          echo 'if [ -f "./outputs/aar/geckoview-arm64-v8a.zip" ]; then' >> ./scripts/ci-download-artifacts.sh
-          echo '  echo "SUCCESS: Found locally compiled GeckoView zip archive."' >> ./scripts/ci-download-artifacts.sh
-          echo '  echo "Bypassing remote S3 download. Tree state is ready for Gradle."' >> ./scripts/ci-download-artifacts.sh
-          echo '  exit 0' >> ./scripts/ci-download-artifacts.sh
-          echo 'else' >> ./scripts/ci-download-artifacts.sh
-          echo '  echo "WARNING: Local geckoview-arm64-v8a.zip not found!"' >> ./scripts/ci-download-artifacts.sh
-          echo '  mkdir -p ./outputs/aar/' >> ./scripts/ci-download-artifacts.sh
-          echo '  exit 0' >> ./scripts/ci-download-artifacts.sh
-          echo 'fi' >> ./scripts/ci-download-artifacts.sh
-            
-          chmod +x ./scripts/ci-download-artifacts.sh
-            
-          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
-
-          # 🎯 ПОВТОРНОЕ РАЗВЕРТЫВАНИЕ ЧИСТЫХ ИНСТРУМЕНТОВ И ИСХОДНИКОВ ИЗ КЭША
-          echo "Re-deploying clean sources and JDK tools for Fenix..."
-          yes | ./scripts/get_sources.sh
-       
-
           # 🔐 ГЕНЕРАЦИЯ СОБСТВЕННОГО КЛЮЧА ДЛЯ ПОДПИСИ APK
           echo "Generating temporary CI Keystore for APK signing..."
 
@@ -212,8 +168,59 @@ jobs:
             exit 1
           fi
 
-          echo "SUCCESS: Keystore generated and verified using embedded JDK!"
+          echo "SUCCESS: Keystore generated and verified using embedde
+          d JDK!"
 
+          # 2. ЖЕСТКО СНОСИМ папку движка, так как yes | пропускает её из-за бага ввода!
+          echo "CRITICAL OVR: Wiping external/ folder to force fresh download for Fenix..."
+          rm -rf external/
+          
+          
+          # 🎯 2. ЧЕСТНАЯ ПОВТОРНАЯ НАСТРОЙКА PYTHON СРЕДСТВАМИ СИСТЕМЫ
+          # Создаем базовую структуру pyenv через системный python3, 
+          # чтобы get_androguard и get_pip автора сразу увидели валидную папку.
+          echo "Re-initializing Python environment for Fenix step..."
+          mkdir -p build/
+          python3 -m venv build/pyenv
+          
+          echo "SUCCESS: Python environment re-initialized and synced with disk."
+       
+          # ПЕРЕСОЗДАНИЕ ВСЕХ ЗАГЛУШЕК ПОСЛЕ RESET
+          echo 'Restoring stubs for Fenix build...'
+          echo 'echo "S3 Upload bypassed successfully."' > ./scripts/ci-upload-artifacts-if.sh
+          chmod +x ./scripts/ci-upload-artifacts-if.sh
+          echo 'echo "CI Prep bypassed successfully."' > ./scripts/ci-prep.sh
+          chmod +x ./scripts/ci-prep.sh
+          # 4. 🎯 ЗАГЛУШКА-ПЕРЕХВАТЧИК ДЛЯ СКАЧИВАНИЯ ИЗ S3 (ПЕРЕПИСАНА ЧЕРЕЗ ECHO)
+          # Переписываем логику в один файл построчно, чтобы не конфликтовать с внешним cat
+          echo '#!/bin/bash' > ./scripts/ci-download-artifacts.sh
+          echo 'echo "--- LOCAL ARTIFACT INTERCEPTOR ---"' >> ./scripts/ci-download-artifacts.sh
+          echo 'echo "Intercepted download request for project: \$1, arch: \$2"' >> ./scripts/ci-download-artifacts.sh
+          echo 'if [ -f "./outputs/aar/geckoview-arm64-v8a.zip" ]; then' >> ./scripts/ci-download-artifacts.sh
+          echo '  echo "SUCCESS: Found locally compiled GeckoView zip archive."' >> ./scripts/ci-download-artifacts.sh
+          echo '  echo "Bypassing remote S3 download. Tree state is ready for Gradle."' >> ./scripts/ci-download-artifacts.sh
+          echo '  exit 0' >> ./scripts/ci-download-artifacts.sh
+          echo 'else' >> ./scripts/ci-download-artifacts.sh
+          echo '  echo "WARNING: Local geckoview-arm64-v8a.zip not found!"' >> ./scripts/ci-download-artifacts.sh
+          echo '  mkdir -p ./outputs/aar/' >> ./scripts/ci-download-artifacts.sh
+          echo '  exit 0' >> ./scripts/ci-download-artifacts.sh
+          echo 'fi' >> ./scripts/ci-download-artifacts.sh
+            
+          chmod +x ./scripts/ci-download-artifacts.sh
+            
+          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
+
+          # 🎯 ПОВТОРНОЕ РАЗВЕРТЫВАНИЕ ЧИСТЫХ ИНСТРУМЕНТОВ И ИСХОДНИКОВ ИЗ КЭША
+          echo "Re-deploying clean sources and JDK tools for Fenix..."
+          yes | ./scripts/get_sources.sh
+       
+          # 🔥 ЗАКРЫВАЕМ РОТ ВАЛИДАТОРУ GECKO (Решение ошибки policies.json)
+          # Подкладываем пустые заглушки, чтобы функция prep_gecko() пропустила нас дальше
+          mkdir -p ./external/gecko/ironfox/prefs/
+          echo "{}" > ./external/gecko/ironfox/prefs/policies.json
+          echo "" > ./external/gecko/ironfox/prefs/ironfox.cfg
+          
+         
           # =====================================================================
           # 🔗 ПОДГОТОВКА СЛИЯНИЯ: РАСПАКОВКА ДВИЖКА В MAVEN ДЛЯ FENIX
           # =====================================================================
@@ -240,15 +247,11 @@ jobs:
             echo "Mode is BUNDLE. Bypassing manual unzip, letting author's mach handle Fat AAR compilation."
           fi
 
-          # Запускаем в режиме rebuild-fenix, чтобы скрипт взял наш готовый Maven-архив движка
-          # =====================================================================
-          # 🎯 ЭТАП 2: БЕЗОПАСНАЯ ИНЪЕКЦИЯ REBUILD-FENIX В ФИНАЛЬНЫЙ ШАГ
-          # =====================================================================
-          echo 'Injecting rebuild-fenix strictly into the final build.sh call...'
-          
-          # Находим уникальную строку вызова build.sh и меняем в ней переменную проекта на "rebuild-fenix"
-          sed -i 's|build.sh.*{IRONFOX_CI_BUILD_PROJECT}"|build.sh" "${IRONFOX_CI_BUILD_ARCH}" "rebuild-fenix"|g' ./scripts/ci-build.sh
-          
+          sed -i 's/IRONFOX_BUILD_FENIX_DEPS=1/IRONFOX_BUILD_FENIX_DEPS=0/g' ./scripts/build-if.sh
+          sed -i 's/IRONFOX_BUILD_GECKOVIEW=1/IRONFOX_BUILD_GECKOVIEW=0/g' ./scripts/build-if.sh
+          sed -i 's/IRONFOX_BUILD_GECKO=1/IRONFOX_BUILD_GECKO=0/g' ./scripts/build-if.sh
+       
+          echo 'Starting Official Fenix build...'
           yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'fenix'
           EOF
 
