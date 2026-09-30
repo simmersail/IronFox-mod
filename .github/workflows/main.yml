@@ -37,7 +37,21 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
+      - name: 💾 Настройка кэша исходников и инструментов (Ускорение x10)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/external/
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cache/uv
+          # Ключ кэша привязываем к версии релиза и файлу версий автора, 
+          # чтобы кэш автоматически сбросился, если автор обновит компиляторы
+          key: ironfox-sources-v154-${{ hashFiles('scripts/versions.sh') }}
+          restore-keys: |
+            ironfox-sources-v154-
+            
       - name: Build in Container
         run: |
           # 1. Создаем файл скрипта.
