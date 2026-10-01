@@ -12,7 +12,7 @@ on:
           - arm
           - arm64
           - x86_64
-          - bundle
+          #- bundle
 
 jobs:
   build:
@@ -101,7 +101,7 @@ jobs:
           rm -rf /__w/IronFox-mod/IronFox-mod/external/uv
           yes | ./scripts/get_sources.sh
           
-          #echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
+          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
           
           #echo 'Starting GeckoView build...'
           #yes | ./scripts/ci-build.sh "$BUILD_ARCH" 'geckoview'
@@ -206,8 +206,8 @@ jobs:
           #echo 'fi' >> ./scripts/ci-download-artifacts.sh
             
           #chmod +x ./scripts/ci-download-artifacts.sh
-            
-          echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
+
+          #echo "ac_add_options --without-google-safebrowsing-api-keyfile" > overrides.mozconfig
 
           # 🎯 ПОВТОРНОЕ РАЗВЕРТЫВАНИЕ ЧИСТЫХ ИНСТРУМЕНТОВ И ИСХОДНИКОВ ИЗ КЭША
           #echo "Re-deploying clean sources and JDK tools for Fenix..."
