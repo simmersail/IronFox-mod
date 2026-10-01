@@ -58,12 +58,6 @@ jobs:
           cat << 'EOF' > build_script.sh
           set -ex
           
-          echo "Forcing global build mode to Official Release 154.0.1..."
-          export MOZ_ANDROID_BUILD_RELEASE=1
-          export MOZILLA_OFFICIAL=1
-          export IRONFOX_BUILD_TYPE="release"
-          export IRONFOX_VERSION="154.0.1"
-          
           mkdir -p /opt/IronFox/
           echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
           echo "disabled" > /opt/IronFox/ironfox-sb-gapi-key.txt
@@ -142,6 +136,9 @@ jobs:
             -v ${{ github.workspace }}:/__w/IronFox-mod/IronFox-mod \
             -w /__w/IronFox-mod/IronFox-mod \
             -e BUILD_ARCH="${{ github.event.inputs.arch }}" \
+            -e IRONFOX_RELEASE="1" \
+            -e MOZ_ANDROID_BUILD_RELEASE="1" \
+            -e MOZILLA_OFFICIAL="1" \
             -e IRONFOX_CI="1" \
             -e CI_PIPELINE_ID="github_action_build" \
             -e MOZ_BUILD_CONCURRENCY=1 \
