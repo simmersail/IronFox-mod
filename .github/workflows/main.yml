@@ -43,6 +43,13 @@ jobs:
         with:
           path: |
             #${{ github.workspace }}/external/
+            ${{ github.workspace }}/external/android-sdk/
+            ${{ github.workspace }}/external/android-ndk/
+            ${{ github.workspace }}/external/rust/
+            ${{ github.workspace }}/external/jdk-21/
+            ${{ github.workspace }}/external/jdk-17/
+            ${{ github.workspace }}/external/jdk-25/
+            ${{ github.workspace }}/external/bundletool/
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cache/uv
