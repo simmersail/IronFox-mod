@@ -1,0 +1,286 @@
+# shellcheck shell=bash
+# Sources
+
+# Firefox
+# Version: 155.0 (RELEASE)
+# https://github.com/mozilla-firefox/firefox
+readonly IRONFOX_GECKO_COMMIT='d065a04bc5610f496762935dee56604a78b91b51'
+readonly IRONFOX_GECKO_SHA512SUM='2aeede2e72e74e899ecb9af1a2ccd7347377f6f4869b0fc10eac87e462a10f59cee9377a9bee2d82fef2f80b72b3c1fde0b461ad157e64e2ee3ef79374b20f83'
+readonly IRONFOX_GECKO_VERSION='155.0'
+
+# IronFox
+readonly IRONFOX_VERSION="${IRONFOX_GECKO_VERSION}"
+
+# This value is used for ex. producing reproducable archives, and its value should be bumped upon new releases
+readonly IRONFOX_VERSION_DATE='2026.09.01'
+
+# Application Services
+# Version: v155.0
+# https://github.com/mozilla/application-services
+# (for reference: https://github.com/mozilla-firefox/firefox/blob/main/mobile/android/android-components/plugins/dependencies/src/main/java/ApplicationServices.kt)
+readonly IRONFOX_AS_COMMIT='c0fd8cea40c9b5dafc6604831f7bd7a8c096d313'
+readonly IRONFOX_AS_SHA512SUM='ec25a2f4ed4686f68e1cc497188f2d95e8c90d4b0a148bbf8f45a31758f45553283f4d4cf3e4dae4ca7960672dca8afd002c74556cc3e64e197e59f4aa6359c0'
+readonly IRONFOX_AS_VERSION='155.0'
+
+# firefox-l10n
+# https://github.com/mozilla-l10n/firefox-l10n
+# NOTE: This repo is updated several times a day...
+# so I think best approach here will be for us to just update it alongside new releases
+readonly IRONFOX_L10N_CENTRAL_COMMIT='5ae3c9392561aa186a3cdef18842a060146e6beb'
+readonly IRONFOX_L10N_CENTRAL_SHA512SUM='57cf03809aae9e4a2dbe7f735f88fcd6bc975a0f5a12d73e3549399f626ce446b01180f8773d88dd13b52e6542c543c8205ef09baf2d6edb3a203f53cf7f4caa'
+
+# Glean
+# Version: 68.0.1
+# https://github.com/mozilla/glean
+# (for reference: https://github.com/mozilla-firefox/firefox/blob/main/gradle/libs.versions.toml)
+readonly IRONFOX_GLEAN_COMMIT='92ecd18105fd2936e11936da749183369a491580'
+readonly IRONFOX_GLEAN_SHA512SUM='b63a6af1fb973f425529fa81c43cd67d18cc94406cb47b82940807a0d018ac5581d14672f20d18dd9f291313b16e2b2a0642377032ef770f169a3c7d1a00d565'
+readonly IRONFOX_GLEAN_VERSION='68.0.1'
+
+# Glean Parser
+# Version: v20.2.0
+# https://github.com/mozilla/glean_parser
+readonly IRONFOX_GLEAN_PARSER_COMMIT='f6c1d64b2cb1d3955deda980809dafe56da500c9'
+readonly IRONFOX_GLEAN_PARSER_SHA512SUM='37138d5cc1d69e2ca0946299d65ff4d25df9498e3dee1b603c6ae610c5b7f3e2632f9f6116d62c0bf657a4fac86ac5c14bc1efcc3d313938d3cc88e51ec36b95'
+readonly IRONFOX_GLEAN_PARSER_VERSION='20.2.0'
+
+# microG
+# Version: v0.3.16.252432
+# https://github.com/microg/GmsCore
+readonly IRONFOX_GMSCORE_COMMIT='9a206ae115d6f4d99300def2aea447332ac84260'
+readonly IRONFOX_GMSCORE_SHA512SUM='b826bd6693b55a4e7844ed773df0015f9f04f502dab50c49c44e5807721918650b0b6cf23a7db5d25312224b2f02e2bdb1edfa1bb8f12dd0023fcd91b71ab275'
+
+# Phoenix
+# Version: 2026.09.01.1
+# https://gitlab.com/celenityy/Phoenix
+readonly IRONFOX_PHOENIX_COMMIT='164d383ca6cab8c66f6a7c37f24e662db6d80204'
+readonly IRONFOX_PHOENIX_SHA512SUM='caa3d949205aeee37b2b0963bfd76ddba5233d0a02a18d3287da12523f0d400487c00438eb6e678c3dec6ac21f0d19955e2b6649d43c9022da5a537b0f0c5e6a'
+
+# uniffi-rs (Tor)
+# https://gitlab.torproject.org/tpo/applications/uniffi-rs
+readonly IRONFOX_UNIFFI_VERSION='0.31.0'
+
+# UnifiedPush-AC
+# Version: 1.0.6
+# https://gitlab.com/ironfox-oss/unifiedpush-ac
+readonly IRONFOX_UP_AC_COMMIT='9a1a56603bd8a67f793382e8797192263d2afb79'
+readonly IRONFOX_UP_AC_SHA512SUM='a7e28e05f61e9141b83d143bcaaa67c804ceed9c29df28b811c5c9efa68824d0ceda2860dd099f676fe187ff57afde4fdeb50c12f21572fe8a9b5afef361ce12'
+
+# WASI SDK
+# https://github.com/WebAssembly/wasi-sdk
+readonly IRONFOX_WASI_VERSION='20'
+
+# Tools
+
+# androguard
+# Version: v4.1.4
+# https://github.com/androguard/androguard
+readonly IRONFOX_ANDROGUARD_COMMIT='d594fd39beb934e438a5bf8089b206d5800d81e0'
+readonly IRONFOX_ANDROGUARD_SHA512SUM='d167b3ca58c073758bd478e68a92f6efe9cc93e14ac4abf52cdadc4917319bdd2fe24ae8c3ba9a584b746ce349247ac853eb7e77eb1125c6a870a199c2b756f2'
+
+# Android NDK
+# Version: 29.0.14206865 (r29)
+# https://developer.android.com/ndk/downloads
+# (for reference: https://github.com/mozilla-firefox/firefox/blob/main/python/mozboot/mozboot/android.py)
+readonly IRONFOX_ANDROID_NDK_REVISION='29.0.14206865'
+readonly IRONFOX_ANDROID_NDK_SHA512SUM_LINUX='b55819895a7fa3a0bc7ed411fb55ed15ad9e415b0122a81a4e026c9b696cd266cb4beebb2008cf1d6cac88d38187d52818734f87de793de303653eccb4ca68da'
+readonly IRONFOX_ANDROID_NDK_SHA512SUM_OSX='4091bc97a03266b869380874cb2d67a35dc74f9bc5f1cde30a3545547355e4ec4f3ebd79a17a19f9228d045f7a176d1e987ce4f787d81a02a044aa909f5ef5cb'
+readonly IRONFOX_ANDROID_NDK_VERSION='r29'
+
+# Android SDK (Command-Line Tools)
+# Version: 21.0 (15641748)
+# https://developer.android.com/tools/releases/cmdline-tools
+# (for reference: https://github.com/mozilla-firefox/firefox/blob/main/python/mozboot/mozboot/android.py
+# + https://github.com/mozilla-firefox/firefox/blob/main/python/mozboot/mozboot/android-packages.txt)
+readonly IRONFOX_ANDROID_SDK_REVISION='15641748'
+readonly IRONFOX_ANDROID_SDK_VERSION='21.0'
+readonly IRONFOX_ANDROID_SDK_SHA512SUM_LINUX='82d136f1ceb8c00cb0b1eb1745884a0561c80fbfc1830ddf37f362654383d776085e04550b787cbc4b7d9bee22d91643c778132c5f3d9f6f84217fd7475b0a1b'
+readonly IRONFOX_ANDROID_SDK_SHA512SUM_OSX='44a22c026ed8b7a5de48c5e5f79ef6783044838d6b03f862681fe26f10200a92fd33565aa9d56bc59c8f7877b7cef34695aff2344b25c89139af0c0ede1c011d'
+
+# Android SDK Build Tools
+# Version: 37.0.0
+# https://developer.android.com/tools/releases/build-tools
+# (for reference: https://github.com/mozilla-firefox/firefox/blob/main/python/mozboot/mozboot/android-packages.txt)
+readonly IRONFOX_ANDROID_SDK_BUILD_TOOLS_VERSION='r37'
+readonly IRONFOX_ANDROID_SDK_BUILD_TOOLS_VERSION_STRING='37.0.0'
+readonly IRONFOX_ANDROID_SDK_BUILD_TOOLS_SHA512SUM_LINUX='0c1735b91da1088d824243bef3f5c070ee4d0b9ccc50d2c20d0c5afdeab41a0fd71f785b98d60579091bb48d1a703f9f5ea6775bab4781de51a9df570b9dba98'
+readonly IRONFOX_ANDROID_SDK_BUILD_TOOLS_SHA512SUM_OSX='b3600aee0148835d7074748d5b6b2d56852e73a7f0081956def0d22e21170514bc0984c5dd4a4ed746eed5476e90dac042aeae571954745fbf2d6a239aa51a5e'
+readonly IRONFOX_ANDROID_SDK_BUILD_TOOLS_35_SHA512SUM_LINUX='b45dc6b7298567f3b45428def0b85584b99b125a3719dfb74a82732bf2b86a0c66161682f3c3d7a50cefaf6e1a2d993975665272e16f00b231a15a9a4512cc1e'
+readonly IRONFOX_ANDROID_SDK_BUILD_TOOLS_35_SHA512SUM_OSX='991db0bbf23acd212b6be57033cdb3ecd5c8c8da79781a6e4326c046c2079b2827892084ee5f77b1fc5d5ef91fc62a4820d43218d3943f0c43e5c093c58c4999'
+
+# Android SDK Platform
+# Version: 37.1
+# https://developer.android.com/tools/releases/platforms
+# (for reference: https://github.com/mozilla-firefox/firefox/blob/main/python/mozboot/mozboot/android-packages.txt)
+readonly IRONFOX_ANDROID_SDK_PLATFORM_VERSION='37.1'
+
+# Android SDK Platform Tools
+# Version: 37.0.1
+# https://developer.android.com/tools/releases/platform-tools
+readonly IRONFOX_ANDROID_SDK_PLATFORM_TOOLS_VERSION='37.0.1'
+readonly IRONFOX_ANDROID_SDK_PLATFORM_TOOLS_SHA512SUM_LINUX='990ee47ae823724599679fe56561df31a6056668246390698c94f9b00a5af8e5966bff4c31c8f8b8d11b3c419ea994147d38e2234fa6e881255dbb29ff203449'
+readonly IRONFOX_ANDROID_SDK_PLATFORM_TOOLS_SHA512SUM_OSX='e6f1cda180a629d097f95a7558c97afb7936a31c0e02d56a8aab3363561cc45f84f85033e7030358a814ee6b4d5b5ff6bcd415f2f36fd378ed16972c72b52e00'
+
+# This is used for setting microG's compile SDK version
+readonly IRONFOX_GMSCORE_ANDROID_SDK_COMPILE_VERSION='36'
+
+# This is used for ex. setting microG's target SDK version
+readonly IRONFOX_ANDROID_SDK_TARGET='37'
+
+# Bundletool
+# Version: 1.18.3
+# https://github.com/google/bundletool
+readonly IRONFOX_BUNDLETOOL_REPO_COMMIT='586a43a450712a1067f3d92cf7574dee68226302'
+readonly IRONFOX_BUNDLETOOL_REPO_SHA512SUM='a72040449b3bd51a29bb562d8686b0338d630be12a5a590a88a753111b887d30f7b32ab256a556157271ed0071fc54b81205efcfd1ef93ccb8142fe41a741345'
+readonly IRONFOX_BUNDLETOOL_SHA512SUM='50feda5f3f00931bad943a37b7cfc33d8ea53b33bd9bfa83832f612da6e99b72146206695ae25df5044030e305e1d718c833ad51c12b944079c263bba3cbffa0'
+readonly IRONFOX_BUNDLETOOL_VERSION='1.18.3'
+
+# cbindgen
+# Version: v0.29.4
+# https://github.com/mozilla/cbindgen
+readonly IRONFOX_CBINDGEN_COMMIT='b826cb8911488fe8a209d2b693492c0c673e8cca'
+readonly IRONFOX_CBINDGEN_SHA512SUM='b1d43c6820a210c809a029a3f7ec92720fca9bfa1bfecd5835615124b005dfb63e30fe1463ab071717f83b0928207dfd2a71d93f57642314b5bae92076ceb15f'
+readonly IRONFOX_CBINDGEN_VERSION='0.29.4'
+
+# Gradle (F-Droid)
+# https://gitlab.com/fdroid/gradlew-fdroid
+readonly IRONFOX_GRADLE_COMMIT='c7227d147483979bb5c408048cee3533a8814fb0'
+readonly IRONFOX_GRADLE_SHA512SUM='43b54c6814d24ec3661262e124f527802056386f94f5b63ad51c7eeaf4503a92c503d0eb025220364d98491c23459a4662a62247a9f092823a626ac39dc860e4'
+
+# GYP
+# Version: v0.22.2
+# https://github.com/nodejs/gyp-next
+readonly IRONFOX_GYP_COMMIT='6a2e12fdc30b521d11f781f986390525a54398bf'
+readonly IRONFOX_GYP_SHA512SUM='b266341d794354a8816668971bcee8a5d555c82fb3164fd59d89a6c7774e4a123e78786341d4c22d6210ac10d5efb8bd39c27e9462b66b9e47e31d19c6d53335'
+
+# JDK 25 (Temurin)
+# Version: 25.0.4.1+1
+# https://github.com/adoptium/temurin25-binaries
+readonly IRONFOX_JDK_25_REVISION='1'
+readonly IRONFOX_JDK_25_SHA512SUM_LINUX_ARM64='988bcdecf5cd8398032d83909c388b4d9de1272412f2d4af1d923413b929b2cf490a0631885a94743e4acd985cb6fb15f96b3350e30cca4b53cbd32b74943528'
+readonly IRONFOX_JDK_25_SHA512SUM_LINUX_X86_64='c96f0d7a22068a488c6bc2ef908f946280d26ce384dbd879c6ae9a01a60441cfed8cff97f3dc5f02b939cc9fab5ad9279b5f497a3523195102cfcd151cac0816'
+readonly IRONFOX_JDK_25_SHA512SUM_OSX_ARM64='535f90a294ffe6adf47bc637605cd7ed5ba4d4c1c89eeeb61d293d8e8f727c0955792fae2c8073c15736f8d03e9756419fdc06adca0039f23aba149d38b7f21a'
+readonly IRONFOX_JDK_25_SHA512SUM_OSX_X86_64='b9e23fe13a03cff92d5e2fe1bb936ebcf6c27aaa1e0080538a6ce0fe48be8540426c09fd72933f39a80834a40ee245e81af1b31f6ac132141935b3162eb288fb'
+readonly IRONFOX_JDK_25_VERSION='25.0.4.1'
+
+# JDK 21 (Temurin)
+# Version: 21.0.12.1+1
+# https://github.com/adoptium/temurin21-binaries
+readonly IRONFOX_JDK_21_REVISION='1'
+readonly IRONFOX_JDK_21_SHA512SUM_LINUX_ARM64='efc33f7d017a51ca151428833a8b74833cdf4c3e83da07305c966e468369b6f9e8068a5db9a103582d0f222b102082b6089f448c2607a5807037f355d5c0c25a'
+readonly IRONFOX_JDK_21_SHA512SUM_LINUX_X86_64='e685aac4ccf79d0681bd3946a74c090c19945cc1b2ff6d92c390c3e535dc391d12c74247e222adfed942ac0dbd0acff014fa4079bb1073f10211915b570a005b'
+readonly IRONFOX_JDK_21_SHA512SUM_OSX_ARM64='298160ef03a894ed95d3a54a0ac720039ec4041b66e9bfc2b8955db6604687657f18a39071a855163c14ff3597ff271b8fd40bc832b49470f4f3b2019ed810f3'
+readonly IRONFOX_JDK_21_SHA512SUM_OSX_X86_64='5ca2152c0e5382ee179f6e985e662a3e006caddb98448a819814e4d12221fc07e05f8a5222d000d27742585c13a09a3600545cac23e3463af851d664f39dca1c'
+readonly IRONFOX_JDK_21_VERSION='21.0.12.1'
+
+# JDK 17 (Temurin)
+# Version: 17.0.20.1+1
+# https://github.com/adoptium/temurin17-binaries
+# (Required by GeckoView)
+readonly IRONFOX_JDK_17_REVISION='1'
+readonly IRONFOX_JDK_17_SHA512SUM_LINUX_ARM64='ff6a6ba23d23d370b9ba3a25476bcae36774d0d13401f8641d7812f65f18c8daaca7234f21b7cac20f26877931407a97304d9666e33684a727a12c1bd1c78b30'
+readonly IRONFOX_JDK_17_SHA512SUM_LINUX_X86_64='394c23d7431932eb4bba39f88c6be12b1c40b8cd88b554334f0cd6a2a8dacbf045257920bde16646932086bc6ce8fee14be629c7af5ee2fb87b1d29bd5782145'
+readonly IRONFOX_JDK_17_SHA512SUM_OSX_ARM64='a4cff0ec343ff8b857da4ff86eeb844e243a1dbda6785adc75f2e0068d2593fef10872a3117795101be808659d5c8216db782cf302aeb2a60a2d9ae883c20e62'
+readonly IRONFOX_JDK_17_SHA512SUM_OSX_X86_64='58f4ad0eac7445fdbd3c110860dbd04e1682cde849e1ddfb61533ede9cd404405070386bdccadfb613619f289892f6a47c721a1335db082ce5c75a1bf0f5b5e4'
+readonly IRONFOX_JDK_17_VERSION='17.0.20.1'
+
+# Node.js
+# Version: 26.8.1
+# https://nodejs.org/about/previous-releases
+# (Used by nvm)
+readonly IRONFOX_NODE_VERSION='26.8.1'
+
+# npm
+# Version: 12.0.2
+# https://github.com/npm/cli
+readonly IRONFOX_NPM_SHA512SUM='b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943'
+readonly IRONFOX_NPM_VERSION='12.0.2'
+
+# nvm
+# Version: v0.40.7
+# https://github.com/nvm-sh/nvm
+readonly IRONFOX_NVM_COMMIT='f0b0c6bb0b281ceeb106c8cf9ab8fde141215092'
+readonly IRONFOX_NVM_SHA512SUM='c685c0428e01617291e56f0477a42dc2613d09ea8925c9ffb75507386ddb37bffae09263d385cba9604155803de121f234733be1454a0d112a0e2ac38e0900a0'
+
+# pip
+# Version: 26.2.1
+# https://github.com/pypa/pip
+readonly IRONFOX_PIP_COMMIT='634a6ec1a5d9dcc2433571cdb2f4c58a4bb29caf'
+readonly IRONFOX_PIP_SHA512SUM='7c1c78ad63d706df20d8b7105d90a1fe46be2ab6454da071af42551d5bf22a9525be7652e4273e0716b2c4942da33d36af401771744ca714c8e6e02973913e06'
+
+# Python
+# Version: 20260825 (3.14.7)
+# https://github.com/astral-sh/python-build-standalone
+readonly IRONFOX_PYTHON_GIT_RELEASE='20260825'
+readonly IRONFOX_PYTHON_SHA512SUM_LINUX_ARM64='c5721ee59bfcbc82b8959f9b974efbd9e6b73456dbe4ca51e77a3b32abc36c1f94fde49c3ee8e11e36721119485d82b55fecefce33d7ab4556fc1cd61f5e723e'
+readonly IRONFOX_PYTHON_SHA512SUM_LINUX_X86_64='36aae7cda2260c56f4bce10ddf721aa54dee70df5f57a19b6d35bb765bbef57180aef5da1913f09814a8eecb86a6acf0bb8aa427f793056d8753af1fabe5eb61'
+readonly IRONFOX_PYTHON_SHA512SUM_OSX_ARM64='fe530b411672c63197a1072d3ea3fafd7ed5acb1dbc3551c699e34f09945825c4f06ea639492a1b6a0f1c867342e30ea07d53fd0729d67691043fe34c86af4d3'
+readonly IRONFOX_PYTHON_SHA512SUM_OSX_X86_64='71d86004f98671608781c668a5922c216bd5974c3ac18b4e5f3e934d7606da83a3521c380b84633e190cfde97c9363de877fc84306c09834211ab2d1b98e65bc'
+readonly IRONFOX_PYTHON_VERSION='3.14.7'
+
+# PyYAML
+# Version: 6.0.3
+# https://github.com/yaml/pyyaml
+readonly IRONFOX_PYYAML_COMMIT='49790e73684bebad1df05ef8d828fa12f685bffb'
+readonly IRONFOX_PYYAML_SHA512SUM='2fd1334af2722c093592f93a5eee01d0b2e26976a12cb2e4859b4271a8fa47ff257d10c91b09bdb2b5aa9415b62693a69d6e6602e997c2bff6711aa02bf43937'
+
+# Rust
+# Version: 1.98.0
+# https://releases.rs/
+readonly IRONFOX_RUST_VERSION='1.98.0'
+
+# rustup
+# Version: 1.29.0
+# https://github.com/rust-lang/rustup/tags
+readonly IRONFOX_RUSTUP_COMMIT='28d1352dbcb436d3111c3594b9e1588e94950464'
+readonly IRONFOX_RUSTUP_SHA512SUM='cd9fd64eabc989f19a6a16e9cd2caabe935082e2715b9308150f86d3839c99eb9a7e42a7ef6730c6d956d870638ee89a04dd9e7e14fe243cc165967b7f2918da'
+readonly IRONFOX_RUSTUP_VERSION='1.29.0'
+
+# s3cmd
+# https://github.com/s3tools/s3cmd
+readonly IRONFOX_S3CMD_COMMIT='cee84f9c539a7bbf5ee73c7bf29a47632119c0c6'
+readonly IRONFOX_S3CMD_SHA512SUM='b1b7c792265dfa1ccdd40f816e3463617c168e4317acac930b251ce73fcd3b8eb479d966d4ba93fbe8c0cf251bada64bcd9caf30d1e5e94c20a87a36447c1263'
+
+# -shellcheck
+# Version: v0.11.0
+# https://github.com/koalaman/shellcheck
+readonly IRONFOX_SHELLCHECK_SHA512SUM_LINUX_ARM64='de5e49175861ce567b98ec7ae0dd25f679c169d15b015bbad8f92ca22d07bb17c0fb906f7d80857e8450945f6a185d4de45e5883514e9aeb3cc155306060225e'
+readonly IRONFOX_SHELLCHECK_SHA512SUM_LINUX_X86_64='25df28923d7d89cfdb9fa8aeef762a887f2bd4ebfbcd43ae71068c60e9458d66250b0f8d6fd66b4bc03723e6cdd47983c547e3ab4f3ea2cbc4bc4028842cc7b9'
+readonly IRONFOX_SHELLCHECK_SHA512SUM_OSX_ARM64='d55817cd8d650f79ec5f163912bd9b05fc39cc1dfb2d0df93bd96ca90f204f0639c93fcfdf1990cf02b7b91bfca6f679ab50ce6b50816a0b76af108547103f35'
+readonly IRONFOX_SHELLCHECK_SHA512SUM_OSX_X86_64='bf8e53f361e52fb9a368e4b75365b39940b620b76fc008ea94aec905f177a897013386902021523b62398417af29de2148e2e7c2aa9922831731d7a38b1c159d'
+readonly IRONFOX_SHELLCHECK_VERSION='v0.11.0'
+
+# shfmt
+# Version: v3.13.1
+# https://github.com/mvdan/sh
+readonly IRONFOX_SHFMT_SHA512SUM_LINUX_ARM64='42bb4b842cdb7413336d797346e5c5ad202a3594c2f6313e4ffc82e9bce555771907d759667bdbe974c8b64b709c9e75051e77ac8cc1a870c8e00ee93df8c2a0'
+readonly IRONFOX_SHFMT_SHA512SUM_LINUX_X86_64='c5a7fa05d4cbfe52322f758b925014e88e8eef269c2b69e20e31426eab3e92c88161822dbe334b2c843f68d612b38958cac0785b16ef1477679958a9dcdfb291'
+readonly IRONFOX_SHFMT_SHA512SUM_OSX_ARM64='7dd7d98058d96f23dd183f8550c28d7039fb190e7d7eae758f4ca1c6903920640f67c2cdd627de918e7b74e878c2d0f7a2cbd1df8f26d12497f4c14bcdf6f927'
+readonly IRONFOX_SHFMT_SHA512SUM_OSX_X86_64='35fe1c980157573923d96844eb0b1b42976dd484a878606874f091cc861aa5bc76dfa67e96f5db3ff6a6f7a0257a3fe33e0aee0c8ae75e5f2dcaad0def48c574'
+readonly IRONFOX_SHFMT_VERSION='v3.13.1'
+
+# uv
+# Version: 0.12.8
+# https://github.com/astral-sh/uv
+readonly IRONFOX_UV_SHA512SUM_LINUX_ARM64='632af530948cbf75fdcc7d4e9b9a7a9c59e421e8b20be08bd84782e72213de5fb8193e989bca3af0d16b473c0d48f20166bb4613b9d9471a8392c17658fc8792'
+readonly IRONFOX_UV_SHA512SUM_LINUX_X86_64='b12cf223b4f64d2c37da7e45dd092cfa83c6f55c0cc22f7b1a66a55cf29aed8ac1b51738317e9820dc0be7781d268f7a9f702f0ab3b75f3bc08fef103faf5d8d'
+readonly IRONFOX_UV_SHA512SUM_OSX_ARM64='9b12800a0db600bbba612c9044889f5e312d98e50bc2c4223534f7e2c724414849a0cc5f2689072fc21e1720f2106fbe028acc1adb1d8f3a94cd746951d175b9'
+readonly IRONFOX_UV_SHA512SUM_OSX_X86_64='2da217def2e2aacd4a5551c42119000c6db5b83c40346cf70966668fb8029e5c1a7c72661acf71222cca6d602d2f64590d2e0fd41650c6ad8f3fddb7c4b38a7e'
+readonly IRONFOX_UV_VERSION='0.12.8'
+
+# For prebuilds
+# https://gitlab.com/ironfox-oss/prebuilds
+readonly IRONFOX_PREBUILDS_COMMIT='f8f9ad55f80d2f2f2df381034b3f144a16fb4253'
+readonly IRONFOX_PREBUILDS_SHA512SUM='5365b4232ed1c25a21f038ffa643ae2cc9c0c79614aa5ad428ac052929fcdfb4b5d35cd38d8f137662321322a73b876f689e1e7d84dfcf37ff3185817dd41dd5'
+
+# uniffi-bindgen
+# Version: 10
+readonly IRONFOX_UNIFFI_IRONFOX_REVISION='10'
+readonly IRONFOX_UNIFFI_LINUX_IRONFOX_SHA512SUM='b55e23db9d0d38f23d738e5358678a41efa48f8c497ea4e07b959e5398a04de4a3d717d3121aca193f43cc5d34cd2fbf8c993e3de4012b76d2b585b4df629815'
+readonly IRONFOX_UNIFFI_OSX_IRONFOX_SHA512SUM='eeb558760ae7fa714f098d8f014026c31e9a8d60b21395dfaa696571e51f437b6834182724f880b3003a9550c41e4fbe88b4147204d2faf3a6dc5a888db6774a'
+
+# WASI SDK
+# Version: 5
+readonly IRONFOX_WASI_IRONFOX_REVISION='5'
+readonly IRONFOX_WASI_LINUX_IRONFOX_SHA512SUM='e827982030baa16e9f3f02992ea33ca0bfeef85a58ef932b8db5f0522a9b48d3d365e2002386ba6b12c1e17c49689d43a85dcc6df884384eb80785cc7907eb27'
+readonly IRONFOX_WASI_OSX_IRONFOX_SHA512SUM='d867d545de050103a3548deb7e15e7173f2c1ee56334146161105c82fac7172f8e50314ffefa23bf92f180ae0a9a401a28bfde12ea4aac98feea4e72f631e491'
