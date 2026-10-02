@@ -35,6 +35,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Auto Detect Release Version
+        id: get_version
+        run: |
+          RAW_VER=$(grep "readonly IRONFOX_GECKO_VERSION=" scripts/versions.sh | cut -d"'" -f2)
+          DOCKER_CONVERTED=$(echo "$RAW_VER" | tr '.' '-')
+          DOCKER_TAG="v${DOCKER_CONVERTED}"
+          echo "tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+          
+
       - name: 💾 Настройка кэша исходников и инструментов (Ускорение x10)
         uses: actions/cache@v4
         with:
@@ -49,11 +58,13 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cache/uv
-          key: ironfox-sources-v154-${{ hashFiles('scripts/versions.sh') }}
+          key: ironfox-tools-${{ steps.get_version.outputs.tag }}-${{ hashFiles('scripts/versions.sh') }}
           restore-keys: |
-            ironfox-sources-v154-
-            
+            ironfox-tools-${{ steps.get_version.outputs.tag }}-
+
       - name: Build in Container
+        env:
+          DOCKER_TAG: ${{ steps.get_version.outputs.tag }}
         run: |
           # 2. Run Docker
           docker run --rm -i \
@@ -84,7 +95,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_STORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
-            registry.gitlab.com/ironfox-oss/ironfox:v154-0-1 \
+            registry.gitlab.com/ironfox-oss/ironfox:$DOCKER_TAG \
             /bin/bash /__w/IronFox-mod/IronFox-mod/scripts/mod_build.sh
             
       - name: Post-Failure Debugging
