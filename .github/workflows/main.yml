@@ -49,9 +49,9 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cache/uv
-          key: ironfox-sources-v154-${{ hashFiles('scripts/versions.sh') }}
+          key: ironfox-sources-v155-${{ hashFiles('scripts/versions.sh') }}
           restore-keys: |
-            ironfox-sources-v154-
+            ironfox-sources-v155-
             
       - name: Build in Container
         run: |
@@ -84,7 +84,7 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE_STORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE_PASS="dummy_pass" \
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
-            registry.gitlab.com/ironfox-oss/ironfox:v154-0-1 \
+            registry.gitlab.com/ironfox-oss/ironfox:v155-0 \
             /bin/bash /__w/IronFox-mod/IronFox-mod/scripts/mod_build.sh
             
       - name: Post-Failure Debugging
