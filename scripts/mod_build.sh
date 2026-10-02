@@ -1,4 +1,4 @@
-set -ex
+          set -ex
           
           mkdir -p /opt/IronFox/
           echo "dummy-keystore-content" > /opt/IronFox/ironfox-android-keystore.jks
