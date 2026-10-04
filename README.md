@@ -1,17 +1,10 @@
-What's this?
-------------
+> ⚠️ **This is a custom fork of ironfox-oss/IronFox ([https://github.com](https://github.com/ironfox-oss/IronFox))**  
+> The original build instructions and project documentation can be found via the link above.
 
-Scripts and patches to compile [Fennec F-Droid](https://f-droid.org/packages/org.mozilla.fennec_fdroid/). They remove proprietary chunks from Mozilla code, rebrand Firefox to Fennec and build it. You can assemble your own APK in the very same way as F-Droid by cloning [recipes](https://gitlab.com/fdroid/fdroiddata) and running
+### 🛠 Customizations and Changes in This Fork:
+* **CI/CD:** Migrated the build pipeline from GitLab CI to **GitHub Actions**.
+* **Configuration:** Modified `.mozconfig`, `.cfg`, and `.config` files for custom build parameters for even more privacy.
+* **Development:** Active testing, debugging, and adjustments are handled in the `mod` branch.
+* **Status:** WIP. No releases as yet.
 
-    fdroid build org.mozilla.fennec_fdroid:VERCODE
-
-where VERCODE is a version code number.
-
-Licenses
---------
-
-The scripts are licensed under the GNU Affero General Public License version 3 or later.
-
-Changes in the patch are licensed according to the header in the files this patch adds or modifies (Apache 2.0 or MPL 2.0).
-
-The artwork is licensed under the MPL 2.0.
+---
