@@ -43,24 +43,55 @@ jobs:
           DOCKER_TAG="v${DOCKER_CONVERTED}"
           echo "tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
           
+      - name: Generate Toolchain Fingerprints
+        run: |
+          chmod +x ./mod/scripts-mod/toolchain_fingerprint.sh
+          ./mod/scripts-mod/toolchain_fingerprint.sh
+          
+      # =====================================================================
+      # CACHE MODULE 1: Host Tools & Packagers (Tied to host-tools.env)
+      # =====================================================================
+      - name: Host Tools Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/
+            ~/.cache/uv
+          key: ironfox-host-tools-${{ hashFiles('host-tools.env') }}
 
-      - name: Set up cache
+      # =====================================================================
+      # CACHE MODULE 2: Heavyweight Cross-Compilers (Tied to compilers.env)
+      # =====================================================================
+      - name: Heavy Compilers Cache
         uses: actions/cache@v4
         with:
           path: |
             ${{ github.workspace }}/external/android-sdk/
             ${{ github.workspace }}/external/android-ndk/
-            ${{ github.workspace }}/external/rust/
-            ${{ github.workspace }}/external/jdk-21/
             ${{ github.workspace }}/external/jdk-17/
+            ${{ github.workspace }}/external/jdk-21/
             ${{ github.workspace }}/external/jdk-25/
             ${{ github.workspace }}/external/bundletool/
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cache/uv
-          key: ironfox-tools-${{ steps.get_version.outputs.tag }}-${{ hashFiles('scripts/versions.sh') }}
-          restore-keys: |
-            ironfox-tools-${{ steps.get_version.outputs.tag }}-
+            ${{ github.workspace }}/external/wasi-sdk/
+          key: ironfox-compilers-${{ hashFiles('compilers.env') }}
+
+      # =====================================================================
+      # CACHE MODULE 3: Pristine Mozilla Gecko Sources (Tied to app TAG)
+      # =====================================================================
+      - name: Restore Mozilla Gecko Sources Cache
+        id: cache_restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ github.workspace }}/external/firefox/
+            ${{ github.workspace }}/external/application-services/
+            ${{ github.workspace }}/external/firefox-l10n/
+            ${{ github.workspace }}/external/glean/
+            ${{ github.workspace }}/external/microg/
+            ${{ github.workspace }}/external/phoenix/
+            ${{ github.workspace }}/external/prebuilds/
+            ${{ github.workspace }}/external/unifiedpush-ac/
+          key: ironfox-gecko-clean-sources-${{ steps.get_version.outputs.tag }}
 
       - name: Build in Container
         env:
@@ -97,7 +128,24 @@ jobs:
             -e IRONFOX_ANDROID_KEYSTORE="/opt/IronFox/ironfox-android-keystore.jks" \
             registry.gitlab.com/ironfox-oss/ironfox:$DOCKER_TAG \
             /bin/bash /__w/IronFox-mod/IronFox-mod/scripts/build-mod.sh
-            
+            # =====================================================================
+      # ШАГ 3: ФИКСАЦИЯ КЭША ЧИСТЫХ ИСХОДНИКОВ (ЗАПЕЧАТЫВАЕМ ДО НАЧАЛА ПАТЧЕЙ!)
+      # =====================================================================
+      - name: Save Clean Environment to Cache
+        if: steps.cache_restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ github.workspace }}/external/firefox/
+            ${{ github.workspace }}/external/application-services/
+            ${{ github.workspace }}/external/firefox-l10n/
+            ${{ github.workspace }}/external/glean/
+            ${{ github.workspace }}/external/microg/
+            ${{ github.workspace }}/external/phoenix/
+            ${{ github.workspace }}/external/prebuilds/
+            ${{ github.workspace }}/external/unifiedpush-ac/
+          key: ironfox-gecko-clean-sources-${{ steps.get_version.outputs.tag }}
+          
       - name: Post-Failure Debugging
         if: failure()
         run: |
