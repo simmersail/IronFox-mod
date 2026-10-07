@@ -10,7 +10,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
 
 INPUT_FILE="${PROJECT_ROOT}/scripts/versions.sh"
-OUTPUT_FILE="${PROJECT_ROOT}/toolchain-only.env"
+
+# Paths for our new isolated fingerprint files
+HOST_TOOLS_ENV="${PROJECT_ROOT}/host-tools.env"
+COMPILERS_ENV="${PROJECT_ROOT}/compilers.env"
 
 # Verify that the author's version file exists
 if [ ! -f "$INPUT_FILE" ]; then
@@ -18,12 +21,22 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
-# FIX 1: Comprehensive toolchain filtering
-# Includes every single standalone tool used by the builder:
-# NDK, SDK, JDK, RUST, CBINDGEN, BUNDLETOOL, NODE, NPM, UV, WASI, ANDROGUARD, GYP
-TARGET_KEYWORDS="NDK|SDK|JDK|RUST|CBINDGEN|BUNDLETOOL|NODE|NPM|UV|WASI|ANDROGUARD|GYP"
+# =====================================================================
+# FILTER 1: Host & Runtime Packagers (Rust, Cargo, UV, Node, Python tools)
+# =====================================================================
+# These tools execute on the host or inside the container to orchestrate building.
+# If they change, we ONLY invalidate the fast cargo/uv package layer.
+HOST_KEYWORDS="RUST|CBINDGEN|NODE|NPM|UV|PIP|PYYAML|ANDROGUARD|GYP|S3CMD|SHELLCHECK|SHFMT"
+grep -E "$HOST_KEYWORDS" "$INPUT_FILE" | sort > "$HOST_TOOLS_ENV"
 
-# Filter, sort, and save to prevent line-order cache invalidation
-grep -E "$TARGET_KEYWORDS" "$INPUT_FILE" | sort > "$OUTPUT_FILE"
+# =====================================================================
+# FILTER 2: Heavy Cross-Compilers (Android SDK, NDK, JDK, WASI, Packaging)
+# =====================================================================
+# These are giant standalone binaries from Google and Adoptium. 
+# They rarely change. Keeping them isolated prevents re-downloading gigabytes.
+COMPILER_KEYWORDS="NDK|SDK|JDK|BUNDLETOOL|WASI"
+grep -E "$COMPILER_KEYWORDS" "$INPUT_FILE" | sort > "$COMPILERS_ENV"
 
-echo "=== [STEALTH] Fingerprint file successfully created: $OUTPUT_FILE ==="
+echo "=== [STEALTH] SUCCESS: Modular fingerprints created successfully! ==="
+echo "-> Host tools manifest: $HOST_TOOLS_ENV"
+echo "-> Compilers manifest:  $COMPILERS_ENV"
