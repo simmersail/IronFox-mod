@@ -4,18 +4,26 @@ set -euo pipefail
 
 echo "=== [STEALTH] Generating clean toolchain fingerprint... ==="
 
-INPUT_FILE="scripts/versions.sh"
-OUTPUT_FILE="toolchain-only.env"
+# FIX 2: Dynamic path resolution based on script location
+# Find the root project directory relative to this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
+
+INPUT_FILE="${PROJECT_ROOT}/scripts/versions.sh"
+OUTPUT_FILE="${PROJECT_ROOT}/toolchain-only.env"
 
 # Verify that the author's version file exists
 if [ ! -f "$INPUT_FILE" ]; then
-    echo "ERROR: $INPUT_FILE not found!"
+    echo "CRITICAL ERROR: Version manifest not found at $INPUT_FILE"
     exit 1
 fi
 
-# Filter only lines containing tool versions (NDK, SDK, JDK, RUST, CBINDGEN)
-# We also sort the output so changes in line order won't invalidate the hash
-grep -E "NDK|SDK|JDK|RUST|CBINDGEN" "$INPUT_FILE" | sort > "$OUTPUT_FILE"
+# FIX 1: Comprehensive toolchain filtering
+# Includes every single standalone tool used by the builder:
+# NDK, SDK, JDK, RUST, CBINDGEN, BUNDLETOOL, NODE, NPM, UV, WASI, ANDROGUARD, GYP
+TARGET_KEYWORDS="NDK|SDK|JDK|RUST|CBINDGEN|BUNDLETOOL|NODE|NPM|UV|WASI|ANDROGUARD|GYP"
 
-echo "=== [STEALTH] Fingerprint file successfully created: $OUTPUT_FILE
-==="
+# Filter, sort, and save to prevent line-order cache invalidation
+grep -E "$TARGET_KEYWORDS" "$INPUT_FILE" | sort > "$OUTPUT_FILE"
+
+echo "=== [STEALTH] Fingerprint file successfully created: $OUTPUT_FILE ==="
