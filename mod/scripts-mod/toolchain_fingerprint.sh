@@ -27,13 +27,13 @@ fi
 # STEP 1: Consolidate all declaration rows containing state targets
 # =====================================================================
 TEMP_MANIFEST="${PROJECT_ROOT}/all_versions.tmp"
-grep -E "readonly .*(VERSION|REVISION|COMMIT|SHA512SUM|DATE)" "$INPUT_FILE" | sort > "$TEMP_MANIFEST"
+grep -E "readonly .*(VERSION|REVISION|COMMIT|SHA512SUM|DATE|TARGET|MIN)" "$INPUT_FILE" | sort > "$TEMP_MANIFEST"
 
 # =====================================================================
 # STEP 2: Filter Host Runtimes & Orchestration Tools
 # =====================================================================
 # Fast-changing host utilities, orchestrators, and system dependencies
-HOST_PATTERNS="RUST|CBINDGEN|NODE|NPM|NVM|PIP|PYYAML|ANDROGUARD|GYP|S3CMD|SHELLCHECK|SHFMT|GRADLE"
+HOST_PATTERNS="RUST|CBINDGEN|NODE|NPM|NVM|PYTHON|PIP|PYYAML|ANDROGUARD|GYP|S3CMD|SHELLCHECK|SHFMT|GRADLE"
 grep -E "$HOST_PATTERNS" "$TEMP_MANIFEST" > "$HOST_TOOLS_ENV" || true
 
 # =====================================================================
